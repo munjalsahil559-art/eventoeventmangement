@@ -1,16 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import HeroBanner from '@/components/HeroBanner';
+import CategorySection from '@/components/CategorySection';
+import EventCard from '@/components/EventCard';
+import { events } from '@/data/events';
+import { Link } from 'react-router-dom';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
-  return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
-  );
-};
+const trending = events.filter((e) => e.trending);
+const recommended = events.slice(0, 6);
 
-const Index = PlaceholderIndex;
+const Index = () => (
+  <div className="container mx-auto space-y-12 py-6">
+    <HeroBanner />
+    <CategorySection />
+
+    {/* Trending */}
+    <section>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="font-display text-2xl font-bold">Trending Now 🔥</h2>
+        <Link to="/events" className="text-sm text-primary hover:underline">View All</Link>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {trending.slice(0, 4).map((event, i) => (
+          <EventCard key={event.id} event={event} index={i} />
+        ))}
+      </div>
+    </section>
+
+    {/* Recommended */}
+    <section>
+      <h2 className="mb-6 font-display text-2xl font-bold">Recommended for You</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {recommended.map((event, i) => (
+          <EventCard key={event.id} event={event} index={i} />
+        ))}
+      </div>
+    </section>
+  </div>
+);
 
 export default Index;
