@@ -20,6 +20,7 @@ export type Database = {
           event_id: string
           id: string
           payment_status: string
+          section_id: string | null
           status: string
           tickets: number
           total_amount: number
@@ -31,6 +32,7 @@ export type Database = {
           event_id: string
           id?: string
           payment_status?: string
+          section_id?: string | null
           status?: string
           tickets?: number
           total_amount?: number
@@ -42,6 +44,7 @@ export type Database = {
           event_id?: string
           id?: string
           payment_status?: string
+          section_id?: string | null
           status?: string
           tickets?: number
           total_amount?: number
@@ -54,6 +57,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "venue_sections"
             referencedColumns: ["id"]
           },
         ]
@@ -168,6 +178,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      venue_sections: {
+        Row: {
+          available_seats: number
+          created_at: string
+          event_id: string
+          id: string
+          price: number
+          section_name: string
+          total_seats: number
+        }
+        Insert: {
+          available_seats?: number
+          created_at?: string
+          event_id: string
+          id?: string
+          price?: number
+          section_name: string
+          total_seats?: number
+        }
+        Update: {
+          available_seats?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          price?: number
+          section_name?: string
+          total_seats?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_sections_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
