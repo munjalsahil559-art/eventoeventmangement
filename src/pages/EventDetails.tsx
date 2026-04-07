@@ -1,22 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, MapPin, Calendar, Clock, Users, Minus, Plus, ArrowLeft, Heart, Share2 } from 'lucide-react';
-import { events } from '@/data/events';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface DbEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  image_url: string | null;
+  date: string;
+  time: string | null;
+  venue: string | null;
+  city: string;
+  price: number;
+  rating: number | null;
+  tickets_sold: number;
+  capacity: number;
+}
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const event = events.find((e) => e.id === id);
+  const [event, setEvent] = useState<DbEvent | null>(null);
+  const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
 
-  if (!event) return (
-    <div className="container mx-auto flex h-[60vh] items-center justify-center">
-      <p className="text-muted-foreground">Event not found.</p>
-    </div>
-  );
+  useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase.from('events').select('*').eq('id', id!).single();
+      if (!error && data) setEvent(data);
+      setLoading(false);
+    };
+    load();
+  }, [id]);
+
+  if (loading) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
+  if (!event) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Event not found.</p></div>;
 
   const handleBook = () => {
     navigate(`/booking/${event.id}?tickets=${tickets}`);
@@ -29,22 +52,17 @@ const EventDetails = () => {
       </button>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main Content */}
         <div className="lg:col-span-2">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden rounded-2xl">
-            <img src={event.image} alt={event.title} className="aspect-[2/1] w-full object-cover" />
+            <img src={event.image_url || '/placeholder.svg'} alt={event.title} className="aspect-[2/1] w-full object-cover" />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-6 space-y-6">
             <div>
-              <div className="mb-2 flex flex-wrap gap-2">
-                {event.tags.map((tag) => (
-                  <span key={tag} className="rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground">{tag}</span>
-                ))}
-              </div>
+              <span className="mb-2 inline-block rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground">{event.category}</span>
               <h1 className="font-display text-3xl font-bold md:text-4xl">{event.title}</h1>
               <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><Star className="h-4 w-4 fill-accent text-accent" /> {event.rating} ({event.reviews.toLocaleString()} reviews)</span>
+                <span className="flex items-center gap-1"><Star className="h-4 w-4 fill-accent text-accent" /> {event.rating ?? 0}</span>
                 <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {event.city}</span>
               </div>
             </div>
@@ -53,40 +71,21 @@ const EventDetails = () => {
               <h3 className="mb-3 font-display text-lg font-semibold">Event Details</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex items-center gap-3"><Calendar className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Date</p><p className="text-sm font-medium">{new Date(event.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p></div></div>
-                <div className="flex items-center gap-3"><Clock className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Time</p><p className="text-sm font-medium">{event.time}</p></div></div>
-                <div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Venue</p><p className="text-sm font-medium">{event.venue}</p></div></div>
-                <div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Availability</p><p className="text-sm font-medium">{event.seats.toLocaleString()} seats</p></div></div>
+                {event.time && <div className="flex items-center gap-3"><Clock className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Time</p><p className="text-sm font-medium">{event.time}</p></div></div>}
+                {event.venue && <div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Venue</p><p className="text-sm font-medium">{event.venue}</p></div></div>}
+                <div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Availability</p><p className="text-sm font-medium">{(event.capacity - event.tickets_sold).toLocaleString()} seats left</p></div></div>
               </div>
             </div>
 
-            <div>
-              <h3 className="mb-3 font-display text-lg font-semibold">About</h3>
-              <p className="leading-relaxed text-muted-foreground">{event.description}</p>
-            </div>
-
-            {/* Reviews placeholder */}
-            <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-3 font-display text-lg font-semibold">Reviews</h3>
-              <div className="space-y-4">
-                {[
-                  { name: 'Aarav S.', rating: 5, text: 'Absolutely amazing experience! Would definitely recommend.' },
-                  { name: 'Priya M.', rating: 4, text: 'Great event, well organized. Venue was fantastic.' },
-                  { name: 'Rohit K.', rating: 5, text: 'Best event I have attended this year. Worth every penny!' },
-                ].map((review, i) => (
-                  <div key={i} className="border-b border-border pb-4 last:border-0 last:pb-0">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{review.name[0]}</div>
-                      <div><p className="text-sm font-medium">{review.name}</p><div className="flex gap-0.5">{Array.from({ length: review.rating }).map((_, j) => <Star key={j} className="h-3 w-3 fill-accent text-accent" />)}</div></div>
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{review.text}</p>
-                  </div>
-                ))}
+            {event.description && (
+              <div>
+                <h3 className="mb-3 font-display text-lg font-semibold">About</h3>
+                <p className="leading-relaxed text-muted-foreground">{event.description}</p>
               </div>
-            </div>
+            )}
           </motion.div>
         </div>
 
-        {/* Booking Sidebar */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
           <div className="sticky top-24 space-y-4 rounded-xl border border-border bg-card p-5">
             <div>
