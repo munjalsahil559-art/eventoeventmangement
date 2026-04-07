@@ -1,40 +1,53 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal } from 'lucide-react';
 import EventCard from '@/components/EventCard';
-import { events, categories, cities, type EventCategory } from '@/data/events';
+import type { DbEvent } from '@/components/EventCard';
+import { categories, cities } from '@/data/events';
+import { supabase } from '@/integrations/supabase/client';
 
 type SortOption = 'popular' | 'latest' | 'price-low' | 'price-high';
 
 const Events = () => {
   const [searchParams] = useSearchParams();
-  const initialCategory = searchParams.get('category') as EventCategory | null;
+  const initialCategory = searchParams.get('category');
   const searchQuery = searchParams.get('search') || '';
 
-  const [selectedCategory, setSelectedCategory] = useState<EventCategory | 'all'>(initialCategory || 'all');
+  const [events, setEvents] = useState<DbEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all');
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from('events').select('*');
+      setEvents(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   const filtered = useMemo(() => {
     let result = [...events];
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((e) => e.title.toLowerCase().includes(q) || e.description.toLowerCase().includes(q) || e.tags.some((t) => t.toLowerCase().includes(q)));
+      result = result.filter((e) => e.title.toLowerCase().includes(q) || (e.description || '').toLowerCase().includes(q));
     }
     if (selectedCategory !== 'all') result = result.filter((e) => e.category === selectedCategory);
     if (selectedCity !== 'all') result = result.filter((e) => e.city === selectedCity);
 
     switch (sortBy) {
-      case 'popular': result.sort((a, b) => b.reviews - a.reviews); break;
+      case 'popular': result.sort((a, b) => b.tickets_sold - a.tickets_sold); break;
       case 'latest': result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); break;
       case 'price-low': result.sort((a, b) => a.price - b.price); break;
       case 'price-high': result.sort((a, b) => b.price - a.price); break;
     }
 
     return result;
-  }, [selectedCategory, selectedCity, sortBy, searchQuery]);
+  }, [events, selectedCategory, selectedCity, sortBy, searchQuery]);
 
   return (
     <div className="container mx-auto py-6">
@@ -48,7 +61,6 @@ const Events = () => {
       </div>
 
       <div className="flex gap-6">
-        {/* Sidebar Filters */}
         <aside className={`${showFilters ? 'block' : 'hidden'} w-full flex-shrink-0 md:block md:w-56`}>
           <div className="space-y-6 rounded-xl border border-border bg-card p-4">
             <div>
@@ -56,7 +68,7 @@ const Events = () => {
               <div className="space-y-1">
                 <button onClick={() => setSelectedCategory('all')} className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectedCategory === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>All</button>
                 {categories.map((c) => (
-                  <button key={c.id} onClick={() => setSelectedCategory(c.id as EventCategory)} className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectedCategory === c.id ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>
+                  <button key={c.id} onClick={() => setSelectedCategory(c.id)} className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectedCategory === c.id ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>
                     {c.icon} {c.label}
                   </button>
                 ))}
@@ -82,9 +94,10 @@ const Events = () => {
           </div>
         </aside>
 
-        {/* Events Grid */}
         <div className="flex-1">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <p className="text-center text-muted-foreground py-12">Loading events...</p>
+          ) : filtered.length === 0 ? (
             <div className="flex h-64 items-center justify-center rounded-xl border border-border bg-card">
               <p className="text-muted-foreground">No events found. Try adjusting your filters.</p>
             </div>

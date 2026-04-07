@@ -2,9 +2,25 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, MapPin, Calendar, Heart } from 'lucide-react';
 import { useState } from 'react';
-import type { Event } from '@/data/events';
 
-const EventCard = ({ event, index = 0 }: { event: Event; index?: number }) => {
+export interface DbEvent {
+  id: string;
+  title: string;
+  category: string;
+  image_url: string | null;
+  date: string;
+  time: string | null;
+  venue: string | null;
+  city: string;
+  price: number;
+  rating: number | null;
+  tickets_sold: number;
+  capacity: number;
+  is_featured: boolean | null;
+  description: string | null;
+}
+
+const EventCard = ({ event, index = 0 }: { event: DbEvent; index?: number }) => {
   const [wishlisted, setWishlisted] = useState(false);
 
   return (
@@ -17,7 +33,7 @@ const EventCard = ({ event, index = 0 }: { event: Event; index?: number }) => {
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all duration-300 hover:border-primary/30 hover:shadow-glow">
           <div className="relative aspect-[3/2] overflow-hidden">
             <img
-              src={event.image}
+              src={event.image_url || '/placeholder.svg'}
               alt={event.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
@@ -29,9 +45,9 @@ const EventCard = ({ event, index = 0 }: { event: Event; index?: number }) => {
             >
               <Heart className={`h-4 w-4 ${wishlisted ? 'fill-primary text-primary' : 'text-foreground'}`} />
             </button>
-            {event.trending && (
+            {event.is_featured && (
               <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-                Trending
+                Featured
               </span>
             )}
             <div className="absolute bottom-3 left-3">
@@ -47,10 +63,10 @@ const EventCard = ({ event, index = 0 }: { event: Event; index?: number }) => {
             <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Star className="h-3 w-3 fill-accent text-accent" />
-                {event.rating}
+                {event.rating ?? 0}
               </span>
               <span>·</span>
-              <span>{event.reviews.toLocaleString()} reviews</span>
+              <span>{event.tickets_sold} sold</span>
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
