@@ -467,7 +467,155 @@ const Admin = () => {
         </>
       )}
 
-      {/* Event Form Modal */}
+      {/* Payments Tab */}
+      {tab === 'payments' && (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Total Payments</p><Wallet className="h-5 w-5 text-green-400" /></div>
+              <p className="mt-2 font-display text-2xl font-bold">₹{totalPaymentAmount.toLocaleString()}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">Card Payments</p><CreditCard className="h-5 w-5 text-blue-400" /></div>
+              <p className="mt-2 font-display text-2xl font-bold">{myPayments.filter(p => p.payment_method === 'card').length}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">UPI Payments</p><Wallet className="h-5 w-5 text-accent" /></div>
+              <p className="mt-2 font-display text-2xl font-bold">{myPayments.filter(p => p.payment_method === 'upi').length}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {myPayments.length === 0 ? (
+              <div className="flex h-48 items-center justify-center"><p className="text-muted-foreground">No payments yet.</p></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-secondary/50">
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Transaction</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Method</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Details</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Amount</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Date</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {myPayments.map(p => (
+                      <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs">{p.transaction_ref || '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${p.payment_method === 'card' ? 'bg-blue-500/10 text-blue-400' : 'bg-accent/10 text-accent'}`}>
+                            {p.payment_method === 'card' ? <CreditCard className="h-3 w-3" /> : <Wallet className="h-3 w-3" />}
+                            {p.payment_method === 'card' ? 'Card' : 'UPI'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">
+                          {p.payment_method === 'card' ? `****${p.card_last_four || ''} · ${p.card_holder_name || ''}` : p.upi_id || '—'}
+                        </td>
+                        <td className="px-4 py-3 font-semibold">₹{p.amount.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">{new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                        <td className="px-4 py-3">
+                          <span className="inline-block rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-400">{p.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Accounts Tab */}
+      {tab === 'accounts' && (
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Add your bank or UPI account to receive payments from users.</p>
+            <button onClick={() => { setShowAccountForm(true); setEditingAccountId(null); setAccountForm(emptyAccountForm); }} className="flex items-center gap-2 gradient-primary rounded-lg px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">
+              <Plus className="h-4 w-4" /> Add Account
+            </button>
+          </div>
+
+          {paymentAccounts.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card p-12 text-center">
+              <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+              <p className="text-muted-foreground">No payment accounts yet. Add your bank or UPI details to receive payments.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {paymentAccounts.map(acc => (
+                <div key={acc.id} className="rounded-xl border border-border bg-card p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <h3 className="font-display font-semibold">{acc.account_holder_name}</h3>
+                    </div>
+                    {acc.is_primary && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Primary</span>}
+                  </div>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    {acc.bank_name && <p>🏦 {acc.bank_name}</p>}
+                    {acc.account_number && <p>A/C: ****{acc.account_number.slice(-4)}</p>}
+                    {acc.ifsc_code && <p>IFSC: {acc.ifsc_code}</p>}
+                    {acc.upi_id && <p>UPI: {acc.upi_id}</p>}
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => handleEditAccount(acc)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => handleDeleteAccount(acc.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Account Form Modal */}
+          {showAccountForm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-2xl border border-border bg-card p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="font-display text-xl font-bold">{editingAccountId ? 'Edit Account' : 'Add Payment Account'}</h2>
+                  <button onClick={() => { setShowAccountForm(false); setEditingAccountId(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+                </div>
+                <form onSubmit={handleAccountSubmit} className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm text-muted-foreground">Account Holder Name *</label>
+                    <input value={accountForm.account_holder_name} onChange={e => setAccountForm({ ...accountForm, account_holder_name: e.target.value })} required className={inputClass} placeholder="Full name" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm text-muted-foreground">Bank Name</label>
+                    <input value={accountForm.bank_name} onChange={e => setAccountForm({ ...accountForm, bank_name: e.target.value })} className={inputClass} placeholder="e.g. HDFC Bank" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1 block text-sm text-muted-foreground">Account Number</label>
+                      <input value={accountForm.account_number} onChange={e => setAccountForm({ ...accountForm, account_number: e.target.value })} className={inputClass} placeholder="Account number" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm text-muted-foreground">IFSC Code</label>
+                      <input value={accountForm.ifsc_code} onChange={e => setAccountForm({ ...accountForm, ifsc_code: e.target.value })} className={inputClass} placeholder="e.g. HDFC0001234" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm text-muted-foreground">UPI ID</label>
+                    <input value={accountForm.upi_id} onChange={e => setAccountForm({ ...accountForm, upi_id: e.target.value })} className={inputClass} placeholder="yourname@upi" />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={accountForm.is_primary} onChange={e => setAccountForm({ ...accountForm, is_primary: e.target.checked })} className="rounded border-border" />
+                    Set as primary account
+                  </label>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={() => { setShowAccountForm(false); setEditingAccountId(null); }} className="flex-1 rounded-lg border border-border py-2.5 text-sm hover:bg-secondary">Cancel</button>
+                    <button type="submit" className="flex-1 gradient-primary rounded-lg py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">{editingAccountId ? 'Update' : 'Add Account'}</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </>
+      )}
+
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card p-6">
