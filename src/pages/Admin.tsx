@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { categories, cities } from '@/data/events';
