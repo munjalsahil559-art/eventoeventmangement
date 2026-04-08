@@ -110,14 +110,18 @@ const Admin = () => {
   }, [user, isAdmin, authLoading]);
 
   const fetchAll = async () => {
-    const [evRes, bkRes, secRes] = await Promise.all([
+    const [evRes, bkRes, secRes, payRes, accRes] = await Promise.all([
       supabase.from('events').select('*').order('created_at', { ascending: false }),
       supabase.from('bookings').select('*').order('created_at', { ascending: false }),
       supabase.from('venue_sections').select('*'),
+      supabase.from('payments').select('*').order('created_at', { ascending: false }),
+      supabase.from('admin_payment_accounts').select('*').eq('admin_id', user!.id),
     ]);
     setEvents(evRes.data || []);
     setBookings(bkRes.data || []);
     setSections(secRes.data || []);
+    setPayments((payRes.data as PaymentRow[]) || []);
+    setPaymentAccounts((accRes.data as PaymentAccount[]) || []);
     setLoading(false);
   };
 
