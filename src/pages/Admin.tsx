@@ -196,7 +196,56 @@ const Admin = () => {
   const handleDeleteSection = async (id: string) => {
     const { error } = await supabase.from('venue_sections').delete().eq('id', id);
     if (error) { toast.error('Failed to delete section'); return; }
-    toast.success('Section deleted'); fetchAll();
+  // Payment Account CRUD
+  const handleAccountSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      admin_id: user!.id,
+      account_holder_name: accountForm.account_holder_name,
+      bank_name: accountForm.bank_name || null,
+      account_number: accountForm.account_number || null,
+      ifsc_code: accountForm.ifsc_code || null,
+      upi_id: accountForm.upi_id || null,
+      is_primary: accountForm.is_primary,
+    };
+    if (editingAccountId) {
+      const { error } = await supabase.from('admin_payment_accounts').update(payload).eq('id', editingAccountId);
+      if (error) { toast.error('Failed to update account'); return; }
+      toast.success('Account updated!');
+    } else {
+      const { error } = await supabase.from('admin_payment_accounts').insert(payload);
+      if (error) { toast.error('Failed to add account'); return; }
+      toast.success('Account added!');
+    }
+    setShowAccountForm(false); setEditingAccountId(null); setAccountForm(emptyAccountForm); fetchAll();
+  };
+
+  const handleEditAccount = (acc: PaymentAccount) => {
+    setAccountForm({
+      account_holder_name: acc.account_holder_name,
+      bank_name: acc.bank_name || '',
+      account_number: acc.account_number || '',
+      ifsc_code: acc.ifsc_code || '',
+      upi_id: acc.upi_id || '',
+      is_primary: acc.is_primary || false,
+    });
+    setEditingAccountId(acc.id);
+    setShowAccountForm(true);
+  };
+
+  const handleDeleteAccount = async (id: string) => {
+    if (!confirm('Delete this payment account?')) return;
+    const { error } = await supabase.from('admin_payment_accounts').delete().eq('id', id);
+    if (error) { toast.error('Failed to delete'); return; }
+    toast.success('Account deleted'); fetchAll();
+  };
+
+  // Payment data for admin's events
+  const myPayments = payments.filter(p => {
+    const booking = bookings.find(b => b.id === p.booking_id);
+    return booking && myEventIds.has(booking.event_id);
+  });
+  const totalPaymentAmount = myPayments.reduce((s, p) => s + p.amount, 0);
   };
 
   if (authLoading || loading) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
