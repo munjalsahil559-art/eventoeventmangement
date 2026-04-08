@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_payment_accounts: {
+        Row: {
+          account_holder_name: string
+          account_number: string | null
+          admin_id: string
+          bank_name: string | null
+          created_at: string
+          id: string
+          ifsc_code: string | null
+          is_primary: boolean | null
+          updated_at: string
+          upi_id: string | null
+        }
+        Insert: {
+          account_holder_name: string
+          account_number?: string | null
+          admin_id: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          is_primary?: boolean | null
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Update: {
+          account_holder_name?: string
+          account_number?: string | null
+          admin_id?: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          is_primary?: boolean | null
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           created_at: string
@@ -127,6 +166,56 @@ export type Database = {
           venue?: string | null
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string
+          card_holder_name: string | null
+          card_last_four: string | null
+          created_at: string
+          id: string
+          payment_method: string
+          status: string
+          transaction_ref: string | null
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          booking_id: string
+          card_holder_name?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          status?: string
+          transaction_ref?: string | null
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          card_holder_name?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          status?: string
+          transaction_ref?: string | null
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
