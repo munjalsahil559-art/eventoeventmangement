@@ -85,10 +85,12 @@ const CHART_COLORS = ['hsl(0, 85%, 55%)', 'hsl(15, 90%, 55%)', 'hsl(280, 70%, 55
 const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'analytics' | 'events' | 'sections'>('analytics');
+  const [tab, setTab] = useState<'analytics' | 'events' | 'sections' | 'payments' | 'accounts'>('analytics');
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [sections, setSections] = useState<VenueSection[]>([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -96,6 +98,9 @@ const Admin = () => {
   const [showSectionForm, setShowSectionForm] = useState(false);
   const [sectionForm, setSectionForm] = useState(emptySectionForm);
   const [sectionEventId, setSectionEventId] = useState('');
+  const [showAccountForm, setShowAccountForm] = useState(false);
+  const [accountForm, setAccountForm] = useState(emptyAccountForm);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
