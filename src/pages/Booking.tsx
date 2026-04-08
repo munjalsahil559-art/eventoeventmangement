@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle, Calendar, MapPin, Clock, CreditCard, Armchair } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Clock, CreditCard, Smartphone, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import VenueSeatMap from '@/components/booking/VenueSeatMap';
+import PaymentInvoice from '@/components/booking/PaymentInvoice';
+import CardPaymentForm from '@/components/booking/CardPaymentForm';
+import UpiPaymentForm from '@/components/booking/UpiPaymentForm';
 
 interface VenueSection {
   id: string;
@@ -25,13 +29,6 @@ interface DbEvent {
   image_url: string | null;
 }
 
-const seatColors: Record<string, string> = {
-  VIP: 'border-accent bg-accent/10 text-accent',
-  Gold: 'border-yellow-500 bg-yellow-500/10 text-yellow-400',
-  Silver: 'border-muted-foreground bg-secondary text-muted-foreground',
-  Platinum: 'border-primary bg-primary/10 text-primary',
-};
-
 const Booking = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -42,9 +39,12 @@ const Booking = () => {
   const [event, setEvent] = useState<DbEvent | null>(null);
   const [sections, setSections] = useState<VenueSection[]>([]);
   const [selectedSection, setSelectedSection] = useState<VenueSection | null>(null);
-  const [step, setStep] = useState<'seats' | 'confirm' | 'payment' | 'success'>('seats');
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [step, setStep] = useState<'seats' | 'payment' | 'success'>('seats');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi'>('card');
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [transactionRef, setTransactionRef] = useState('');
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
@@ -67,39 +67,75 @@ const Booking = () => {
   const fee = Math.round(subtotal * 0.05);
   const total = subtotal + fee;
 
-  const handlePayment = async () => {
+  const handlePayment = async (details: { method: 'card' | 'upi'; cardNumber?: string; cardHolder?: string; upiId?: string }) => {
     setProcessing(true);
-    const { error } = await supabase.from('bookings').insert({
+
+    // Create booking
+    const { data: booking, error: bookingError } = await supabase.from('bookings').insert({
       user_id: user!.id,
       event_id: event.id,
       tickets,
       total_amount: total,
       section_id: selectedSection?.id || null,
-    });
-    if (error) {
-      toast.error('Booking failed: ' + error.message);
+    }).select('id').single();
+
+    if (bookingError || !booking) {
+      toast.error('Booking failed: ' + (bookingError?.message || 'Unknown error'));
       setProcessing(false);
       return;
     }
+
+    // Create payment record
+    const txnRef = `TXN-${Date.now().toString(36).toUpperCase()}`;
+    const { error: payError } = await supabase.from('payments').insert({
+      booking_id: booking.id,
+      user_id: user!.id,
+      amount: total,
+      payment_method: details.method,
+      card_last_four: details.cardNumber ? details.cardNumber.replace(/\s/g, '').slice(-4) : null,
+      card_holder_name: details.cardHolder || null,
+      upi_id: details.upiId || null,
+      transaction_ref: txnRef,
+      status: 'completed',
+    });
+
+    if (payError) {
+      toast.error('Payment recording failed');
+      setProcessing(false);
+      return;
+    }
+
+    setTransactionRef(txnRef);
     setProcessing(false);
     setStep('success');
     toast.success('Booking confirmed!');
   };
 
+  // Success screen
   if (step === 'success') {
     return (
       <div className="container mx-auto flex min-h-[60vh] items-center justify-center py-6">
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-md text-center">
-          <CheckCircle className="mx-auto mb-4 h-20 w-20 text-green-500" />
-          <h1 className="mb-2 font-display text-3xl font-bold">Booking Confirmed!</h1>
-          <p className="mb-6 text-muted-foreground">Your tickets for {event.title} have been booked successfully.</p>
-          <div className="mb-6 rounded-xl border border-border bg-card p-4 text-left text-sm space-y-2">
-            <p><span className="text-muted-foreground">Event:</span> {event.title}</p>
-            {selectedSection && <p><span className="text-muted-foreground">Section:</span> {selectedSection.section_name}</p>}
-            <p><span className="text-muted-foreground">Tickets:</span> {tickets}</p>
-            <p><span className="text-muted-foreground">Total Paid:</span> ₹{total}</p>
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md">
+          <div className="text-center mb-6">
+            <CheckCircle className="mx-auto mb-4 h-20 w-20 text-green-500" />
+            <h1 className="mb-2 font-display text-3xl font-bold">Booking Confirmed!</h1>
+            <p className="text-muted-foreground">Your tickets have been booked successfully.</p>
           </div>
-          <div className="flex gap-3 justify-center">
+
+          <PaymentInvoice
+            event={event}
+            sectionName={selectedSection?.section_name}
+            seats={selectedSeats}
+            tickets={tickets}
+            unitPrice={unitPrice}
+            subtotal={subtotal}
+            fee={fee}
+            total={total}
+            transactionRef={transactionRef}
+            paymentMethod={paymentMethod}
+          />
+
+          <div className="mt-6 flex gap-3 justify-center">
             <button onClick={() => navigate('/')} className="rounded-lg border border-border px-6 py-2.5 text-sm transition-colors hover:bg-secondary">Go Home</button>
             <button onClick={() => navigate('/profile')} className="gradient-primary rounded-lg px-6 py-2.5 text-sm font-semibold text-primary-foreground">View Bookings</button>
           </div>
@@ -109,115 +145,163 @@ const Booking = () => {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl py-6">
-      <h1 className="mb-6 font-display text-3xl font-bold">
-        {step === 'seats' ? 'Select Your Seats' : step === 'confirm' ? 'Confirm Booking' : 'Payment'}
-      </h1>
+    <div className="container mx-auto max-w-3xl py-6">
+      <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </button>
 
-      <div className="space-y-4">
-        {/* Event info */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex gap-4">
-            {event.image_url && <img src={event.image_url} alt={event.title} className="h-24 w-36 rounded-lg object-cover" />}
-            <div>
-              <h2 className="font-display text-lg font-semibold">{event.title}</h2>
-              <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                <p className="flex items-center gap-2"><Calendar className="h-3.5 w-3.5" />{new Date(event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                {event.time && <p className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{event.time}</p>}
-                {event.venue && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{event.venue}, {event.city}</p>}
-              </div>
+      {/* Progress indicator */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${step === 'seats' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+          1. Select Seats
+        </div>
+        <div className="h-px flex-1 bg-border" />
+        <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${step === 'payment' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+          2. Payment
+        </div>
+      </div>
+
+      {/* Event info header */}
+      <div className="mb-6 rounded-xl border border-border bg-card p-4">
+        <div className="flex gap-4">
+          {event.image_url && <img src={event.image_url} alt={event.title} className="h-20 w-32 rounded-lg object-cover" />}
+          <div>
+            <h2 className="font-display text-lg font-semibold">{event.title}</h2>
+            <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              {event.time && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{event.time}</span>}
+              {event.venue && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{event.venue}, {event.city}</span>}
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Seat Selection */}
-        {step === 'seats' && (
-          <div className="space-y-4">
-            {sections.length > 0 ? (
-              <>
-                <p className="text-sm text-muted-foreground">Choose a seating section:</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {sections.map((sec) => {
-                    const colorClass = seatColors[sec.section_name] || 'border-border bg-secondary text-foreground';
-                    const isSelected = selectedSection?.id === sec.id;
-                    const soldOut = sec.available_seats < tickets;
-                    return (
-                      <button
-                        key={sec.id}
-                        disabled={soldOut}
-                        onClick={() => setSelectedSection(sec)}
-                        className={`relative rounded-xl border-2 p-4 text-left transition-all ${soldOut ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]'} ${isSelected ? colorClass + ' ring-2 ring-offset-2 ring-offset-background ring-primary' : 'border-border bg-card'}`}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Armchair className="h-5 w-5" />
-                          <span className="font-display font-semibold text-lg">{sec.section_name}</span>
-                        </div>
-                        <p className="text-2xl font-bold">₹{sec.price}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {soldOut ? 'Sold Out' : `${sec.available_seats} seats available`}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={() => { if (!selectedSection) { toast.error('Please select a section'); return; } setStep('confirm'); }}
-                  className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  Continue with {selectedSection?.section_name || '...'} — ₹{unitPrice}/ticket
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="rounded-xl border border-border bg-card p-6 text-center">
-                  <Armchair className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">No specific seating sections for this event. General admission at ₹{event.price}/ticket.</p>
-                </div>
-                <button
-                  onClick={() => setStep('confirm')}
-                  className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  Continue — ₹{event.price}/ticket
-                </button>
-              </>
-            )}
-          </div>
-        )}
+      {/* STEP 1: Seat Selection */}
+      {step === 'seats' && (
+        <div className="space-y-6">
+          {sections.length > 0 ? (
+            <>
+              <VenueSeatMap
+                sections={sections}
+                tickets={tickets}
+                selectedSection={selectedSection}
+                onSelectSection={setSelectedSection}
+                onSelectSeat={setSelectedSeats}
+                selectedSeats={selectedSeats}
+              />
 
-        {/* Price summary */}
-        {(step === 'confirm' || step === 'payment') && (
-          <div className="rounded-xl border border-border bg-card p-5 space-y-3 text-sm">
-            {selectedSection && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Section</span><span className="font-medium">{selectedSection.section_name}</span></div>
-            )}
-            <div className="flex justify-between"><span className="text-muted-foreground">{tickets} × ₹{unitPrice}</span><span>₹{subtotal}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Convenience Fee</span><span>₹{fee}</span></div>
-            <div className="border-t border-border pt-3 flex justify-between text-base font-bold"><span>Total</span><span className="text-gradient">₹{total}</span></div>
-          </div>
-        )}
+              {selectedSection && (
+                <PaymentInvoice
+                  event={event}
+                  sectionName={selectedSection.section_name}
+                  seats={selectedSeats}
+                  tickets={tickets}
+                  unitPrice={unitPrice}
+                  subtotal={subtotal}
+                  fee={fee}
+                  total={total}
+                />
+              )}
 
-        {step === 'confirm' && (
-          <button onClick={() => setStep('payment')} className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-            Proceed to Payment
-          </button>
-        )}
-
-        {step === 'payment' && (
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-              <h3 className="flex items-center gap-2 font-display font-semibold"><CreditCard className="h-5 w-5 text-primary" /> Payment Details</h3>
-              <input placeholder="Card Number" className="w-full rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none" defaultValue="4242 4242 4242 4242" />
-              <div className="grid grid-cols-2 gap-3">
-                <input placeholder="MM/YY" className="rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none" defaultValue="12/28" />
-                <input placeholder="CVV" className="rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none" defaultValue="123" />
+              <button
+                onClick={() => {
+                  if (!selectedSection) { toast.error('Please select a section'); return; }
+                  if (selectedSeats.length < tickets) { toast.error(`Please select ${tickets} seat(s)`); return; }
+                  setStep('payment');
+                }}
+                disabled={!selectedSection || selectedSeats.length < tickets}
+                className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                Continue to Payment — {selectedSection ? `${selectedSection.section_name} ₹${total.toLocaleString()}` : 'Select seats first'}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="rounded-xl border border-border bg-card p-8 text-center">
+                <p className="text-muted-foreground">General admission — ₹{event.price}/ticket</p>
               </div>
-            </div>
-            <button onClick={handlePayment} disabled={processing} className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50">
-              {processing ? 'Processing...' : `Pay ₹${total}`}
+
+              <PaymentInvoice
+                event={event}
+                seats={[]}
+                tickets={tickets}
+                unitPrice={event.price}
+                subtotal={event.price * tickets}
+                fee={Math.round(event.price * tickets * 0.05)}
+                total={Math.round(event.price * tickets * 1.05)}
+              />
+
+              <button
+                onClick={() => setStep('payment')}
+                className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Continue to Payment — ₹{Math.round(event.price * tickets * 1.05).toLocaleString()}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* STEP 2: Payment */}
+      {step === 'payment' && (
+        <div className="space-y-6">
+          {/* Payment method tabs */}
+          <div className="flex rounded-xl border border-border overflow-hidden">
+            <button
+              onClick={() => setPaymentMethod('card')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
+                paymentMethod === 'card' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CreditCard className="h-4 w-4" /> Card Payment
+            </button>
+            <button
+              onClick={() => setPaymentMethod('upi')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
+                paymentMethod === 'upi' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Smartphone className="h-4 w-4" /> UPI Payment
             </button>
           </div>
-        )}
-      </div>
+
+          {/* Invoice */}
+          <PaymentInvoice
+            event={event}
+            sectionName={selectedSection?.section_name}
+            seats={selectedSeats}
+            tickets={tickets}
+            unitPrice={unitPrice}
+            subtotal={subtotal}
+            fee={fee}
+            total={total}
+            paymentMethod={paymentMethod}
+          />
+
+          {/* Payment form */}
+          {paymentMethod === 'card' ? (
+            <CardPaymentForm
+              total={total}
+              processing={processing}
+              onPay={(details) => handlePayment({ method: 'card', cardNumber: details.cardNumber, cardHolder: details.cardHolder })}
+            />
+          ) : (
+            <UpiPaymentForm
+              total={total}
+              eventTitle={event.title}
+              processing={processing}
+              onPay={(upiId) => handlePayment({ method: 'upi', upiId })}
+            />
+          )}
+
+          <button
+            onClick={() => setStep('seats')}
+            className="w-full rounded-lg border border-border py-2.5 text-sm text-muted-foreground hover:bg-secondary transition-colors"
+          >
+            ← Back to Seat Selection
+          </button>
+        </div>
+      )}
     </div>
   );
 };
