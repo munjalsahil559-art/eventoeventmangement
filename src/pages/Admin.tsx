@@ -196,6 +196,9 @@ const Admin = () => {
   const handleDeleteSection = async (id: string) => {
     const { error } = await supabase.from('venue_sections').delete().eq('id', id);
     if (error) { toast.error('Failed to delete section'); return; }
+    toast.success('Section deleted'); fetchAll();
+  };
+
   // Payment Account CRUD
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,7 +249,6 @@ const Admin = () => {
     return booking && myEventIds.has(booking.event_id);
   });
   const totalPaymentAmount = myPayments.reduce((s, p) => s + p.amount, 0);
-  };
 
   if (authLoading || loading) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
 
