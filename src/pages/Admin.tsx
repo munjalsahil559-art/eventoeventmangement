@@ -44,12 +44,41 @@ interface BookingRow {
   event_id: string;
 }
 
+interface PaymentRow {
+  id: string;
+  booking_id: string;
+  user_id: string;
+  amount: number;
+  payment_method: string;
+  card_last_four: string | null;
+  card_holder_name: string | null;
+  upi_id: string | null;
+  transaction_ref: string | null;
+  status: string;
+  created_at: string;
+}
+
+interface PaymentAccount {
+  id: string;
+  admin_id: string;
+  account_holder_name: string;
+  bank_name: string | null;
+  account_number: string | null;
+  ifsc_code: string | null;
+  upi_id: string | null;
+  is_primary: boolean | null;
+}
+
 const emptyForm = {
   title: '', description: '', category: 'movies', venue: '', city: 'Mumbai',
   date: '', time: '', price: 0, capacity: 100, image_url: '', is_featured: false,
 };
 
 const emptySectionForm = { section_name: '', price: 0, total_seats: 100 };
+
+const emptyAccountForm = {
+  account_holder_name: '', bank_name: '', account_number: '', ifsc_code: '', upi_id: '', is_primary: false,
+};
 
 const CHART_COLORS = ['hsl(0, 85%, 55%)', 'hsl(15, 90%, 55%)', 'hsl(280, 70%, 55%)', 'hsl(150, 60%, 45%)', 'hsl(210, 70%, 55%)'];
 
