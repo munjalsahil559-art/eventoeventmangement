@@ -266,9 +266,11 @@ const Admin = () => {
           { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
           { id: 'events' as const, label: 'My Events', icon: Ticket },
           { id: 'sections' as const, label: 'Venue Sections', icon: Armchair },
+          { id: 'payments' as const, label: 'Payments', icon: Wallet },
+          { id: 'accounts' as const, label: 'My Accounts', icon: Building2 },
         ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-2 rounded-t-lg px-4 py-2 text-sm font-medium transition-colors ${tab === t.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-            <t.icon className="h-4 w-4" /> {t.label}
+          <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-2 rounded-t-lg px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${tab === t.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            <t.icon className="h-4 w-4" /> <span className="hidden sm:inline">{t.label}</span>
           </button>
         ))}
       </div>
