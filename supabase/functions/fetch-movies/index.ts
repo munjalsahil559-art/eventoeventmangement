@@ -21,10 +21,15 @@ Deno.serve(async (req) => {
     const type = url.searchParams.get('type') || 'movies' // movies or sports
 
     if (type === 'movies') {
-      const headers = { 'Authorization': `Bearer ${TMDB_API_KEY}`, 'Accept': 'application/json' }
+      // Support both API key (v3) and Read Access Token (v4)
+      const isV4Token = TMDB_API_KEY.length > 40
+      const fetchOpts = isV4Token 
+        ? { headers: { 'Authorization': `Bearer ${TMDB_API_KEY}`, 'Accept': 'application/json' } }
+        : {}
+      const keyParam = isV4Token ? '' : `&api_key=${TMDB_API_KEY}`
       const [nowPlayingRes, upcomingRes] = await Promise.all([
-        fetch(`https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1`, { headers }),
-        fetch(`https://api.themoviedb.org/3/movie/upcoming?language=en-US&page=1`, { headers }),
+        fetch(`https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1${keyParam}`, fetchOpts),
+        fetch(`https://api.themoviedb.org/3/movie/upcoming?language=en-US&page=1${keyParam}`, fetchOpts),
       ])
 
       const [nowPlaying, upcoming] = await Promise.all([nowPlayingRes.json(), upcomingRes.json()])
