@@ -27,6 +27,10 @@ Deno.serve(async (req) => {
       ])
 
       const [nowPlaying, upcoming] = await Promise.all([nowPlayingRes.json(), upcomingRes.json()])
+      
+      console.log('TMDB now_playing status:', nowPlayingRes.status, 'results count:', (nowPlaying.results || []).length)
+      console.log('TMDB upcoming status:', upcomingRes.status, 'results count:', (upcoming.results || []).length)
+      if (nowPlaying.status_message) console.log('TMDB error:', nowPlaying.status_message)
 
       const allMovies = [...(nowPlaying.results || []), ...(upcoming.results || [])]
       const uniqueMovies = allMovies.filter((m: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === m.id) === i)
