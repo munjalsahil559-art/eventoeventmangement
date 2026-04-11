@@ -22,8 +22,8 @@ Deno.serve(async (req) => {
 
     if (type === 'movies') {
       const [nowPlayingRes, upcomingRes] = await Promise.all([
-        fetch(`https://api.themoviedb.org/3/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-IN&region=IN&page=1`),
-        fetch(`https://api.themoviedb.org/3/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-IN&region=IN&page=1`),
+        fetch(`https://api.themoviedb.org/3/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-US&page=1`),
+        fetch(`https://api.themoviedb.org/3/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=1`),
       ])
 
       const [nowPlaying, upcoming] = await Promise.all([nowPlayingRes.json(), upcomingRes.json()])
