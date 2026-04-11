@@ -11,6 +11,7 @@ import Booking from "./pages/Booking";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import ImportEvents from "./pages/ImportEvents";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
