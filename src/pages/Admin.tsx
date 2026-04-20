@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { categories, cities } from '@/data/events';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import LiveSeatMonitor from '@/components/admin/LiveSeatMonitor';
 
 interface DbEvent {
   id: string;
@@ -85,7 +86,7 @@ const CHART_COLORS = ['hsl(0, 85%, 55%)', 'hsl(15, 90%, 55%)', 'hsl(280, 70%, 55
 const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'analytics' | 'events' | 'sections' | 'payments' | 'accounts'>('analytics');
+  const [tab, setTab] = useState<'analytics' | 'events' | 'sections' | 'liveseats' | 'payments' | 'accounts'>('analytics');
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [sections, setSections] = useState<VenueSection[]>([]);
@@ -268,6 +269,7 @@ const Admin = () => {
           { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
           { id: 'events' as const, label: 'My Events', icon: Ticket },
           { id: 'sections' as const, label: 'Venue Sections', icon: Armchair },
+          { id: 'liveseats' as const, label: 'Live Seats', icon: Eye },
           { id: 'payments' as const, label: 'Payments', icon: Wallet },
           { id: 'accounts' as const, label: 'My Accounts', icon: Building2 },
         ].map(t => (
@@ -467,6 +469,22 @@ const Admin = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Live Seats Tab */}
+      {tab === 'liveseats' && (
+        <div className="space-y-4">
+          {myEvents.filter(ev => sections.some(s => s.event_id === ev.id)).length === 0 ? (
+            <div className="rounded-xl border border-border bg-card p-12 text-center">
+              <Eye className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+              <p className="text-muted-foreground">Add venue sections to your events to monitor live seat bookings.</p>
+            </div>
+          ) : (
+            myEvents
+              .filter(ev => sections.some(s => s.event_id === ev.id))
+              .map(ev => <LiveSeatMonitor key={ev.id} eventId={ev.id} eventTitle={ev.title} />)
+          )}
+        </div>
       )}
 
       {/* Payments Tab */}
