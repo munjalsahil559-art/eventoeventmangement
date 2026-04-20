@@ -17,6 +17,8 @@ interface VenueSeatMapProps {
   onSelectSection: (section: VenueSection) => void;
   onSelectSeat: (seatIds: string[]) => void;
   selectedSeats: string[];
+  bookedSeats?: string[];
+  readOnly?: boolean;
 }
 
 const SECTION_COLORS: Record<string, { bg: string; border: string; selected: string; label: string }> = {
@@ -29,30 +31,29 @@ const SECTION_COLORS: Record<string, { bg: string; border: string; selected: str
 const getColors = (name: string) => SECTION_COLORS[name] || SECTION_COLORS.Silver;
 
 // Generate seat rows based on section capacity
-const generateRows = (section: VenueSection) => {
+const generateRows = (section: VenueSection, bookedSeats: string[]) => {
   const seatsPerRow = section.section_name === 'VIP' ? 8 : section.section_name === 'Gold' ? 12 : 14;
   const totalDisplaySeats = Math.min(section.total_seats, seatsPerRow * 6); // max 6 rows
   const rows: { label: string; seats: { id: string; available: boolean }[] }[] = [];
-  const unavailable = section.total_seats - section.available_seats;
 
-  let seatNum = 0;
   for (let r = 0; r < Math.ceil(totalDisplaySeats / seatsPerRow); r++) {
     const rowLabel = String.fromCharCode(65 + r);
     const seats = [];
-    for (let s = 0; s < seatsPerRow && seatNum < totalDisplaySeats; s++) {
-      seatNum++;
-      seats.push({ id: `${section.id}-${rowLabel}${s + 1}`, available: seatNum > unavailable });
+    for (let s = 0; s < seatsPerRow && rows.flat().length < totalDisplaySeats; s++) {
+      const id = `${section.id}-${rowLabel}${s + 1}`;
+      seats.push({ id, available: !bookedSeats.includes(id) });
+      if (rows.reduce((acc, row) => acc + row.seats.length, 0) + seats.length >= totalDisplaySeats) break;
     }
     rows.push({ label: rowLabel, seats });
   }
   return rows;
 };
 
-const VenueSeatMap = ({ sections, tickets, selectedSection, onSelectSection, onSelectSeat, selectedSeats }: VenueSeatMapProps) => {
+const VenueSeatMap = ({ sections, tickets, selectedSection, onSelectSection, onSelectSeat, selectedSeats, bookedSeats = [], readOnly = false }: VenueSeatMapProps) => {
   const [hoveredSeat, setHoveredSeat] = useState<string | null>(null);
 
   const handleSeatClick = (seatId: string, available: boolean) => {
-    if (!available) return;
+    if (!available || readOnly) return;
     if (selectedSeats.includes(seatId)) {
       onSelectSeat(selectedSeats.filter(s => s !== seatId));
     } else if (selectedSeats.length < tickets) {
@@ -115,7 +116,7 @@ const VenueSeatMap = ({ sections, tickets, selectedSection, onSelectSection, onS
           </div>
 
           <div className="flex flex-col items-center gap-1.5 overflow-x-auto py-2">
-            {generateRows(selectedSection).map(row => (
+            {generateRows(selectedSection, bookedSeats).map(row => (
               <div key={row.label} className="flex items-center gap-1">
                 <span className="w-5 text-center text-[10px] font-mono text-muted-foreground">{row.label}</span>
                 <div className="flex gap-1">
@@ -134,14 +135,14 @@ const VenueSeatMap = ({ sections, tickets, selectedSection, onSelectSection, onS
                           onMouseLeave={() => setHoveredSeat(null)}
                           className={`h-6 w-6 rounded-t-lg text-[8px] font-mono transition-all ${
                             !seat.available
-                              ? 'bg-muted/50 text-muted-foreground/30 cursor-not-allowed'
+                              ? 'bg-destructive/80 text-destructive-foreground border border-destructive cursor-not-allowed shadow-[0_0_8px_hsl(var(--destructive)/0.5)]'
                               : isSelected
                               ? `${colors.selected} scale-110 shadow-lg`
                               : isHovered
                               ? `${colors.bg} ${colors.border} border scale-105`
                               : 'bg-secondary border border-border hover:border-primary/50'
-                          }`}
-                          title={`${seat.id.split('-').pop()} ${!seat.available ? '(Booked)' : isSelected ? '(Selected)' : ''}`}
+                          } ${readOnly && seat.available ? 'cursor-default' : ''}`}
+                          title={`Seat ${seat.id.split('-').pop()} ${!seat.available ? '— BOOKED' : isSelected ? '— Selected' : '— Available'}`}
                         >
                           <Armchair className="h-3 w-3 mx-auto" />
                         </button>
@@ -158,7 +159,7 @@ const VenueSeatMap = ({ sections, tickets, selectedSection, onSelectSection, onS
           <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
             <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-sm bg-secondary border border-border" /> Available</div>
             <div className="flex items-center gap-1"><div className={`h-3 w-3 rounded-sm ${getColors(selectedSection.section_name).selected}`} /> Selected</div>
-            <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-sm bg-muted/50" /> Booked</div>
+            <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-sm bg-destructive/80 border border-destructive shadow-[0_0_4px_hsl(var(--destructive)/0.6)]" /> Booked</div>
           </div>
         </motion.div>
       )}
