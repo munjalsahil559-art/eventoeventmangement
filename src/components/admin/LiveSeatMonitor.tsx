@@ -76,7 +76,7 @@ const LiveSeatMonitor = ({ eventId, eventTitle }: LiveSeatMonitorProps) => {
         sections={sections}
         tickets={0}
         selectedSection={selectedSection}
-        onSelectSection={setSelectedSection}
+        onSelectSection={(s) => setSelectedSection(s as VenueSection)}
         onSelectSeat={() => {}}
         selectedSeats={[]}
         bookedSeats={bookedSeats}
