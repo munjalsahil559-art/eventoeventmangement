@@ -162,6 +162,9 @@ const LiveSeatMonitor = ({ eventId, eventTitle }: LiveSeatMonitorProps) => {
           <span className="flex items-center gap-1.5 rounded-full bg-destructive/15 text-destructive px-3 py-1.5">
             <Armchair className="h-3.5 w-3.5" /> {bookedSeats.length} seats booked
           </span>
+          <button onClick={exportCSV} disabled={exporting || bookedSeats.length === 0} className="flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">
+            <Download className="h-3.5 w-3.5" /> {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
           <button onClick={refresh} className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 hover:bg-secondary transition-colors">
             <RefreshCw className="h-3.5 w-3.5" /> Refresh
           </button>
