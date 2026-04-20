@@ -40,6 +40,7 @@ const Booking = () => {
   const [sections, setSections] = useState<VenueSection[]>([]);
   const [selectedSection, setSelectedSection] = useState<VenueSection | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [bookedSeats, setBookedSeats] = useState<string[]>([]);
   const [step, setStep] = useState<'seats' | 'payment' | 'success'>('seats');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi'>('card');
   const [processing, setProcessing] = useState(false);
@@ -54,9 +55,22 @@ const Booking = () => {
       setEvent(ev);
       const { data: secs } = await supabase.from('venue_sections').select('*').eq('event_id', id!);
       setSections(secs || []);
+      const { data: existing } = await supabase.from('bookings').select('booked_seat_ids').eq('event_id', id!);
+      const all = (existing || []).flatMap(b => (b.booked_seat_ids as string[] | null) || []);
+      setBookedSeats(all);
       setLoading(false);
     };
     load();
+
+    // Realtime: refresh booked seats when new bookings come in
+    const channel = supabase
+      .channel(`booking-${id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings', filter: `event_id=eq.${id}` }, (payload) => {
+        const newSeats = ((payload.new as { booked_seat_ids?: string[] }).booked_seat_ids) || [];
+        if (newSeats.length) setBookedSeats(prev => Array.from(new Set([...prev, ...newSeats])));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [id, user]);
 
   if (loading) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
@@ -70,19 +84,27 @@ const Booking = () => {
   const handlePayment = async (details: { method: 'card' | 'upi'; cardNumber?: string; cardHolder?: string; upiId?: string }) => {
     setProcessing(true);
 
-    // Create booking
+    // Create booking with seat IDs
     const { data: booking, error: bookingError } = await supabase.from('bookings').insert({
       user_id: user!.id,
       event_id: event.id,
       tickets,
       total_amount: total,
       section_id: selectedSection?.id || null,
+      booked_seat_ids: selectedSeats,
     }).select('id').single();
 
     if (bookingError || !booking) {
       toast.error('Booking failed: ' + (bookingError?.message || 'Unknown error'));
       setProcessing(false);
       return;
+    }
+
+    // Decrement section available_seats so admin sees real count
+    if (selectedSection && selectedSeats.length) {
+      await supabase.from('venue_sections')
+        .update({ available_seats: Math.max(0, selectedSection.available_seats - selectedSeats.length) })
+        .eq('id', selectedSection.id);
     }
 
     // Create payment record
@@ -188,6 +210,7 @@ const Booking = () => {
                 onSelectSection={setSelectedSection}
                 onSelectSeat={setSelectedSeats}
                 selectedSeats={selectedSeats}
+                bookedSeats={bookedSeats}
               />
 
               {selectedSection && (
