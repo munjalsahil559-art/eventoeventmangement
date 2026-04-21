@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import ImportEvents from "./pages/ImportEvents";
+import Scanner from "./pages/Scanner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/import-events" element={<ImportEvents />} />
+            <Route path="/admin/scanner" element={<Scanner />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
