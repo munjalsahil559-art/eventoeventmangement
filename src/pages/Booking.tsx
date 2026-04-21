@@ -9,6 +9,7 @@ import VenueSeatMap from '@/components/booking/VenueSeatMap';
 import PaymentInvoice from '@/components/booking/PaymentInvoice';
 import CardPaymentForm from '@/components/booking/CardPaymentForm';
 import UpiPaymentForm from '@/components/booking/UpiPaymentForm';
+import MyTicketsQR from '@/components/booking/MyTicketsQR';
 
 interface VenueSection {
   id: string;
@@ -46,6 +47,7 @@ const Booking = () => {
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [transactionRef, setTransactionRef] = useState('');
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
@@ -127,10 +129,27 @@ const Booking = () => {
       return;
     }
 
+    // Generate one ticket per seat (or per ticket count for GA)
+    const seatsForTickets = selectedSeats.length ? selectedSeats : Array.from({ length: tickets }, (_, i) => `GA-${i + 1}`);
+    const ticketRows = seatsForTickets.map(seatId => ({
+      booking_id: booking.id,
+      event_id: event.id,
+      user_id: user!.id,
+      section_id: selectedSection?.id || null,
+      seat_label: seatId.split('-').pop() || seatId,
+    }));
+    const { data: createdTickets, error: ticketErr } = await supabase.from('tickets').insert(ticketRows).select('id');
+    if (ticketErr) {
+      console.error('Ticket generation failed', ticketErr);
+      toast.warning('Booking saved but QR tickets failed to generate');
+    } else {
+      setBookingId(booking.id);
+    }
+
     setTransactionRef(txnRef);
     setProcessing(false);
     setStep('success');
-    toast.success('Booking confirmed!');
+    toast.success(`Booking confirmed — ${createdTickets?.length || tickets} QR ticket${(createdTickets?.length || tickets) > 1 ? 's' : ''} generated!`);
   };
 
   // Success screen
@@ -156,6 +175,12 @@ const Booking = () => {
             transactionRef={transactionRef}
             paymentMethod={paymentMethod}
           />
+
+          {bookingId && (
+            <div className="mt-6">
+              <MyTicketsQR bookingId={bookingId} />
+            </div>
+          )}
 
           <div className="mt-6 flex gap-3 justify-center">
             <button onClick={() => navigate('/')} className="rounded-lg border border-border px-6 py-2.5 text-sm transition-colors hover:bg-secondary">Go Home</button>

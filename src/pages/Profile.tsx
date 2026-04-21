@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, Settings, LogOut } from 'lucide-react';
+import { Ticket, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import MyTicketsQR from '@/components/booking/MyTicketsQR';
 
 interface BookingRow {
   id: string;
@@ -18,6 +19,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [profile, setProfile] = useState<{ display_name: string | null; city: string | null } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -61,18 +63,34 @@ const Profile = () => {
         {bookings.length === 0 ? (
           <p className="text-sm text-muted-foreground">No bookings yet.</p>
         ) : (
-          bookings.map((b) => (
-            <div key={b.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
-              <div>
-                <p className="font-medium">{(b.events as any)?.title || 'Event'}</p>
-                <p className="text-xs text-muted-foreground">{b.id.slice(0, 8).toUpperCase()} · {new Date(b.created_at).toLocaleDateString()} · {b.tickets} tickets</p>
+          bookings.map((b) => {
+            const open = expandedId === b.id;
+            return (
+              <div key={b.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                <button
+                  onClick={() => setExpandedId(open ? null : b.id)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors text-left"
+                >
+                  <div>
+                    <p className="font-medium">{(b.events as any)?.title || 'Event'}</p>
+                    <p className="text-xs text-muted-foreground">{b.id.slice(0, 8).toUpperCase()} · {new Date(b.created_at).toLocaleDateString()} · {b.tickets} ticket{b.tickets > 1 ? 's' : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-semibold">₹{b.total_amount}</p>
+                      <span className={`text-xs ${b.status === 'confirmed' ? 'text-green-400' : 'text-muted-foreground'}`}>{b.status}</span>
+                    </div>
+                    {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </button>
+                {open && (
+                  <div className="border-t border-border p-4 bg-secondary/20">
+                    <MyTicketsQR bookingId={b.id} />
+                  </div>
+                )}
               </div>
-              <div className="text-right">
-                <p className="font-semibold">₹{b.total_amount}</p>
-                <span className={`text-xs ${b.status === 'confirmed' ? 'text-green-400' : 'text-muted-foreground'}`}>{b.status}</span>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
