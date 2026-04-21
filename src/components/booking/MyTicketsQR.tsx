@@ -172,6 +172,24 @@ const MyTicketsQR = ({ bookingId }: Props) => {
                   >
                     <Download className="h-3 w-3" /> Save QR
                   </button>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={() => shareTicket(ticket)}
+                      className="flex items-center gap-1 text-[11px] bg-primary/10 text-primary px-2 py-1 rounded-md hover:bg-primary/20 transition-colors"
+                    >
+                      <Share2 className="h-3 w-3" /> Share
+                    </button>
+                    <button
+                      onClick={() => copyTicketLink(ticket)}
+                      className="flex items-center gap-1 text-[11px] bg-secondary text-secondary-foreground px-2 py-1 rounded-md hover:bg-secondary/80 transition-colors"
+                    >
+                      {copiedId === ticket.id ? (
+                        <><Check className="h-3 w-3" /> Copied!</>
+                      ) : (
+                        <><Link2 className="h-3 w-3" /> Copy Link</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
