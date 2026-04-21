@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, Settings, LogOut } from 'lucide-react';
+import { Ticket, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import MyTicketsQR from '@/components/booking/MyTicketsQR';
 
 interface BookingRow {
   id: string;
@@ -18,6 +19,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [profile, setProfile] = useState<{ display_name: string | null; city: string | null } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
