@@ -70,6 +70,40 @@ const MyTicketsQR = ({ bookingId }: Props) => {
     URL.revokeObjectURL(url);
   };
 
+  const copyTicketLink = async (ticket: TicketRow) => {
+    const link = `${window.location.origin}/ticket/${ticket.ticket_code}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedId(ticket.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const shareTicket = async (ticket: TicketRow) => {
+    const shareData = {
+      title: ticket.events?.title || 'Event Ticket',
+      text: `Join me at ${ticket.events?.title}!\n` +
+            `${ticket.events?.venue ? `📍 ${ticket.events.venue}, ` : ''}${ticket.events?.city}\n` +
+            `${ticket.events?.date ? `📅 ${new Date(ticket.events.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}${ticket.events?.time ? ` · ${ticket.events.time}` : ''}\n` +
+            `🎫 ${ticket.venue_sections?.section_name || 'GA'} · Seat ${ticket.seat_label}`,
+      url: `${window.location.origin}/ticket/${ticket.ticket_code}`,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          copyTicketLink(ticket);
+        }
+      }
+    } else {
+      copyTicketLink(ticket);
+    }
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground text-center py-4">Generating tickets...</p>;
   if (!tickets.length) return null;
 
