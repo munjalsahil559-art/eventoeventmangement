@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/import-events" element={<ImportEvents />} />
             <Route path="/admin/scanner" element={<Scanner />} />
+            <Route path="/ticket/:ticketCode" element={<TicketView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
