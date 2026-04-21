@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard, Eye, ScanLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { categories, cities } from '@/data/events';
@@ -261,7 +261,12 @@ const Admin = () => {
         <ArrowLeft className="h-4 w-4" /> Back to home
       </button>
 
-      <h1 className="mb-6 font-display text-3xl font-bold">Admin Dashboard</h1>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <h1 className="font-display text-3xl font-bold">Admin Dashboard</h1>
+        <button onClick={() => navigate('/admin/scanner')} className="flex items-center gap-2 gradient-primary rounded-lg px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+          <ScanLine className="h-4 w-4" /> Open Ticket Scanner
+        </button>
+      </div>
 
       {/* Tabs */}
       <div className="mb-6 flex gap-2 border-b border-border pb-2">
