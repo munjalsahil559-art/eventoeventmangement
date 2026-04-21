@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'framer-motion';
-import { Ticket as TicketIcon, CheckCircle2, XCircle, Calendar, MapPin, Clock, Armchair, Download } from 'lucide-react';
+import { Ticket as TicketIcon, CheckCircle2, XCircle, Calendar, MapPin, Clock, Armchair, Download, Share2, Link2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TicketRow {
