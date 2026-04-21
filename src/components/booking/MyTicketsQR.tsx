@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'framer-motion';
-import { Ticket as TicketIcon, CheckCircle2, XCircle, Calendar, MapPin, Clock, Armchair, Download } from 'lucide-react';
+import { Ticket as TicketIcon, CheckCircle2, XCircle, Calendar, MapPin, Clock, Armchair, Download, Share2, Link2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TicketRow {
@@ -28,6 +28,7 @@ const statusStyle = (status: string) => {
 const MyTicketsQR = ({ bookingId }: Props) => {
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +68,40 @@ const MyTicketsQR = ({ bookingId }: Props) => {
     a.download = `ticket-${ticket.ticket_code}.svg`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const copyTicketLink = async (ticket: TicketRow) => {
+    const link = `${window.location.origin}/ticket/${ticket.ticket_code}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedId(ticket.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const shareTicket = async (ticket: TicketRow) => {
+    const shareData = {
+      title: ticket.events?.title || 'Event Ticket',
+      text: `Join me at ${ticket.events?.title}!\n` +
+            `${ticket.events?.venue ? `📍 ${ticket.events.venue}, ` : ''}${ticket.events?.city}\n` +
+            `${ticket.events?.date ? `📅 ${new Date(ticket.events.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}${ticket.events?.time ? ` · ${ticket.events.time}` : ''}\n` +
+            `🎫 ${ticket.venue_sections?.section_name || 'GA'} · Seat ${ticket.seat_label}`,
+      url: `${window.location.origin}/ticket/${ticket.ticket_code}`,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          copyTicketLink(ticket);
+        }
+      }
+    } else {
+      copyTicketLink(ticket);
+    }
   };
 
   if (loading) return <p className="text-sm text-muted-foreground text-center py-4">Generating tickets...</p>;
@@ -137,6 +172,24 @@ const MyTicketsQR = ({ bookingId }: Props) => {
                   >
                     <Download className="h-3 w-3" /> Save QR
                   </button>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={() => shareTicket(ticket)}
+                      className="flex items-center gap-1 text-[11px] bg-primary/10 text-primary px-2 py-1 rounded-md hover:bg-primary/20 transition-colors"
+                    >
+                      <Share2 className="h-3 w-3" /> Share
+                    </button>
+                    <button
+                      onClick={() => copyTicketLink(ticket)}
+                      className="flex items-center gap-1 text-[11px] bg-secondary text-secondary-foreground px-2 py-1 rounded-md hover:bg-secondary/80 transition-colors"
+                    >
+                      {copiedId === ticket.id ? (
+                        <><Check className="h-3 w-3" /> Copied!</>
+                      ) : (
+                        <><Link2 className="h-3 w-3" /> Copy Link</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
