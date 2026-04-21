@@ -28,6 +28,7 @@ const statusStyle = (status: string) => {
 const MyTicketsQR = ({ bookingId }: Props) => {
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
