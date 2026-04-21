@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import ImportEvents from "./pages/ImportEvents";
 import Scanner from "./pages/Scanner";
+import TicketView from "./pages/TicketView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
