@@ -6,7 +6,7 @@ import type { DbEvent } from '@/components/EventCard';
 import { categories, cities, states, statesWithCities } from '@/data/events';
 import { supabase } from '@/integrations/supabase/client';
 
-type SortOption = 'popular' | 'latest' | 'price-low' | 'price-high';
+type SortOption = 'popular' | 'date-asc' | 'date-desc' | 'price-low' | 'price-high';
 
 const Events = () => {
   const [searchParams] = useSearchParams();
@@ -46,7 +46,8 @@ const Events = () => {
 
     switch (sortBy) {
       case 'popular': result.sort((a, b) => b.tickets_sold - a.tickets_sold); break;
-      case 'latest': result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); break;
+      case 'date-asc': result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); break;
+      case 'date-desc': result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); break;
       case 'price-low': result.sort((a, b) => a.price - b.price); break;
       case 'price-high': result.sort((a, b) => b.price - a.price); break;
     }
@@ -109,7 +110,13 @@ const Events = () => {
             <div>
               <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Sort By</h3>
               <div className="space-y-1">
-                {([['popular', 'Most Popular'], ['latest', 'Upcoming'], ['price-low', 'Price: Low to High'], ['price-high', 'Price: High to Low']] as const).map(([val, label]) => (
+                {([
+                  ['popular', 'Most Popular'],
+                  ['date-asc', 'Date: Earliest First'],
+                  ['date-desc', 'Date: Latest First'],
+                  ['price-low', 'Price: Low to High'],
+                  ['price-high', 'Price: High to Low'],
+                ] as const).map(([val, label]) => (
                   <button key={val} onClick={() => setSortBy(val)} className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${sortBy === val ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>{label}</button>
                 ))}
               </div>
