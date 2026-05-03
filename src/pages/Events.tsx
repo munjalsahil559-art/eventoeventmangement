@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal } from 'lucide-react';
 import EventCard from '@/components/EventCard';
 import type { DbEvent } from '@/components/EventCard';
-import { categories, cities } from '@/data/events';
+import { categories, cities, states, statesWithCities } from '@/data/events';
 import { supabase } from '@/integrations/supabase/client';
 
 type SortOption = 'popular' | 'latest' | 'price-low' | 'price-high';
@@ -16,6 +16,7 @@ const Events = () => {
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all');
+  const [selectedState, setSelectedState] = useState<string>('all');
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [showFilters, setShowFilters] = useState(false);
@@ -37,6 +38,10 @@ const Events = () => {
       result = result.filter((e) => e.title.toLowerCase().includes(q) || (e.description || '').toLowerCase().includes(q));
     }
     if (selectedCategory !== 'all') result = result.filter((e) => e.category === selectedCategory);
+    if (selectedState !== 'all') {
+      const stateCities = new Set(statesWithCities[selectedState] || []);
+      result = result.filter((e) => stateCities.has(e.city));
+    }
     if (selectedCity !== 'all') result = result.filter((e) => e.city === selectedCity);
 
     switch (sortBy) {
@@ -47,7 +52,12 @@ const Events = () => {
     }
 
     return result;
-  }, [events, selectedCategory, selectedCity, sortBy, searchQuery]);
+  }, [events, selectedCategory, selectedState, selectedCity, sortBy, searchQuery]);
+
+  const cityOptions = useMemo(() => {
+    if (selectedState === 'all') return cities;
+    return statesWithCities[selectedState] || [];
+  }, [selectedState]);
 
   return (
     <div className="container mx-auto py-6">
@@ -75,10 +85,23 @@ const Events = () => {
               </div>
             </div>
             <div>
+              <h3 className="mb-3 text-sm font-semibold text-muted-foreground">State</h3>
+              <select
+                value={selectedState}
+                onChange={(e) => { setSelectedState(e.target.value); setSelectedCity('all'); }}
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >
+                <option value="all">All States</option>
+                {states.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <h3 className="mb-3 text-sm font-semibold text-muted-foreground">City</h3>
               <div className="space-y-1">
                 <button onClick={() => setSelectedCity('all')} className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectedCity === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>All Cities</button>
-                {cities.map((c) => (
+                {cityOptions.map((c) => (
                   <button key={c} onClick={() => setSelectedCity(c)} className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectedCity === c ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>{c}</button>
                 ))}
               </div>
