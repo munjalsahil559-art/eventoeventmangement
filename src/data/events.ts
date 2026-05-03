@@ -74,6 +74,44 @@ export const cities = [
   'Kavali', 'Tadepalligudem', 'Amaravati', 'Buxar', 'Jehanabad', 'Aurangabad (Bihar)',
 ];
 
+// Mapping of Indian states/UTs to their major cities (subset matching the cities array above).
+export const statesWithCities: Record<string, string[]> = {
+  'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Rajahmundry', 'Kakinada', 'Tirupati', 'Anantapur', 'Kadapa', 'Eluru', 'Ongole', 'Nandyal', 'Machilipatnam', 'Adoni', 'Tenali', 'Proddatur', 'Hindupur', 'Bhimavaram', 'Madanapalle', 'Guntakal', 'Dharmavaram', 'Gudivada', 'Narasaraopet', 'Tadipatri', 'Chittoor', 'Srikakulam', 'Kavali', 'Tadepalligudem', 'Amaravati', 'Vijayanagaram'],
+  'Arunachal Pradesh': ['Itanagar'],
+  'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat'],
+  'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Purnia', 'Arrah', 'Begusarai', 'Katihar', 'Munger', 'Chapra', 'Bihar Sharif', 'Saharsa', 'Sasaram', 'Hajipur', 'Dehri', 'Siwan', 'Bettiah', 'Motihari', 'Jamalpur', 'Ballia', 'Kishanganj', 'Buxar', 'Jehanabad', 'Aurangabad (Bihar)', 'Danapur'],
+  'Chandigarh': ['Chandigarh'],
+  'Chhattisgarh': ['Raipur', 'Bhilai', 'Bilaspur', 'Korba', 'Durg', 'Rourkela', 'Raurkela Industrial Township'],
+  'Delhi': ['Delhi', 'Khora', 'Karawal Nagar', 'Kirari Suleman Nagar', 'Sultan Pur Majra', 'Bhalswa Jahangir Pur', 'Nangloi Jat'],
+  'Goa': ['Panaji'],
+  'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Jamnagar', 'Bhavnagar', 'Gandhinagar', 'Anand', 'Morbi', 'Mehsana', 'Nadiad', 'Surendranagar Dudhrej', 'Gandhidham'],
+  'Haryana': ['Faridabad', 'Gurugram', 'Panipat', 'Karnal', 'Sonipat', 'Hisar', 'Ambala', 'Yamunanagar', 'Rohtak', 'Panchkula', 'Bhiwani', 'Sirsa', 'Hapur'],
+  'Himachal Pradesh': ['Shimla'],
+  'Jammu and Kashmir': ['Srinagar', 'Jammu'],
+  'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Deoghar', 'Ramgarh', 'Medininagar'],
+  'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Gulbarga', 'Davanagere', 'Ballari', 'Bidar', 'Tumkur', 'Raichur', 'Hospet'],
+  'Kerala': ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kollam', 'Alappuzha', 'Kottayam'],
+  'Madhya Pradesh': ['Indore', 'Bhopal', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar', 'Ratlam', 'Dewas', 'Satna', 'Rewa', 'Singrauli', 'Murwara', 'Burhanpur', 'Khandwa', 'Morena', 'Bhind', 'Guna', 'Shivpuri', 'Khora'],
+  'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Thane', 'Nashik', 'Aurangabad', 'Navi Mumbai', 'Solapur', 'Mira-Bhayandar', 'Bhiwandi', 'Amravati', 'Nanded', 'Kolhapur', 'Sangli', 'Malegaon', 'Akola', 'Latur', 'Dhule', 'Ahmednagar', 'Ichalkaranji', 'Jalna', 'Ambernath', 'Parbhani', 'Panvel', 'Bhusawal', 'Ulhasnagar'],
+  'Manipur': ['Imphal'],
+  'Meghalaya': ['Shillong'],
+  'Mizoram': ['Aizawl'],
+  'Nagaland': ['Kohima'],
+  'Odisha': ['Bhubaneswar', 'Cuttack', 'Brahmapur', 'Sambalpur', 'Haldia'],
+  'Puducherry': ['Pondicherry', 'Ozhukarai'],
+  'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Phagwara'],
+  'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur', 'Bhilwara', 'Alwar', 'Sri Ganganagar', 'Sikar', 'Pali', 'Bharatpur'],
+  'Sikkim': ['Gangtok'],
+  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thoothukudi', 'Dindigul', 'Thanjavur', 'Pallavaram', 'Ambattur', 'Tiruvottiyur', 'Hosur', 'Nagarcoil', 'Karaikudi', 'Pudukkottai', 'Kumbakonam'],
+  'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam', 'Ramagundam', 'Secunderabad', 'Suryapet', 'Miryalaguda'],
+  'Tripura': ['Agartala'],
+  'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Ghaziabad', 'Agra', 'Varanasi', 'Meerut', 'Allahabad', 'Bareilly', 'Aligarh', 'Moradabad', 'Saharanpur', 'Gorakhpur', 'Noida', 'Firozabad', 'Jhansi', 'Mathura', 'Shahjahanpur', 'Mau', 'Farrukhabad', 'Etawah', 'Mirzapur', 'Bulandshahr', 'Sambhal', 'Amroha', 'Bahraich', 'Raebareli', 'Fatehpur', 'Orai', 'Unnao', 'Jaunpur', 'Hapur', 'Loni'],
+  'Uttarakhand': ['Dehradun', 'Haridwar'],
+  'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Bardhaman', 'Bally', 'Kharagpur', 'Malda', 'Berhampore', 'Naihati', 'Bidhannagar', 'Hugli-Chinsurah', 'Madhyamgram', 'Raiganj', 'Serampore', 'Uluberia', 'Barasat', 'Kulti', 'Mango', 'North Dumdum', 'Haldia'],
+};
+
+export const states = Object.keys(statesWithCities).sort();
+
 export const events: Event[] = [
   {
     id: '1',
