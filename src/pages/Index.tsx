@@ -3,6 +3,7 @@ import HeroBanner from '@/components/HeroBanner';
 import CategorySection from '@/components/CategorySection';
 import EventCard from '@/components/EventCard';
 import type { DbEvent } from '@/components/EventCard';
+import AIRecommender from '@/components/AIRecommender';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,6 +26,7 @@ const Index = () => {
   return (
     <div className="container mx-auto space-y-12 py-6">
       <HeroBanner />
+      <AIRecommender />
       <CategorySection />
 
       {loading ? (
