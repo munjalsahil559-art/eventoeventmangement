@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, MapPin, Calendar, Heart } from 'lucide-react';
 import { useState } from 'react';
+import { computeDynamicPrice, priceBadgeClasses } from '@/lib/dynamicPricing';
 
 export interface DbEvent {
   id: string;
@@ -22,6 +23,9 @@ export interface DbEvent {
 
 const EventCard = ({ event, index = 0 }: { event: DbEvent; index?: number }) => {
   const [wishlisted, setWishlisted] = useState(false);
+  const dyn = computeDynamicPrice(event);
+  const surging = dyn.label === 'surge';
+  const deal = dyn.label === 'deal';
 
   return (
     <motion.div
@@ -51,10 +55,22 @@ const EventCard = ({ event, index = 0 }: { event: DbEvent; index?: number }) => 
               </span>
             )}
             <div className="absolute bottom-3 left-3">
-              <span className="rounded-md bg-background/70 px-2 py-1 text-lg font-bold backdrop-blur-sm">
-                ₹{event.price}
-              </span>
+              <div className="flex items-end gap-1.5">
+                <span className="rounded-md bg-background/70 px-2 py-1 text-lg font-bold backdrop-blur-sm">
+                  ₹{dyn.price}
+                </span>
+                {dyn.price !== dyn.base && (
+                  <span className="rounded-md bg-background/60 px-1.5 py-0.5 text-[10px] line-through text-muted-foreground backdrop-blur-sm">
+                    ₹{dyn.base}
+                  </span>
+                )}
+              </div>
             </div>
+            {(surging || deal) && (
+              <span className={`absolute right-3 bottom-3 rounded-full px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm ${priceBadgeClasses(dyn.label)}`}>
+                {surging ? '🔥 Surge' : '💸 Deal'}
+              </span>
+            )}
           </div>
           <div className="p-4">
             <h3 className="mb-1 font-display text-base font-semibold leading-tight line-clamp-1 group-hover:text-primary transition-colors">

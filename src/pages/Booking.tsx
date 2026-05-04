@@ -10,6 +10,7 @@ import PaymentInvoice from '@/components/booking/PaymentInvoice';
 import CardPaymentForm from '@/components/booking/CardPaymentForm';
 import UpiPaymentForm from '@/components/booking/UpiPaymentForm';
 import MyTicketsQR from '@/components/booking/MyTicketsQR';
+import { computeDynamicPrice, priceBadgeClasses } from '@/lib/dynamicPricing';
 
 interface VenueSection {
   id: string;
@@ -28,6 +29,8 @@ interface DbEvent {
   city: string;
   price: number;
   image_url: string | null;
+  tickets_sold?: number;
+  capacity?: number;
 }
 
 const Booking = () => {
@@ -52,7 +55,7 @@ const Booking = () => {
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
     const load = async () => {
-      const { data: ev } = await supabase.from('events').select('id, title, date, time, venue, city, price, image_url').eq('id', id!).single();
+      const { data: ev } = await supabase.from('events').select('id, title, date, time, venue, city, price, image_url, tickets_sold, capacity').eq('id', id!).single();
       if (!ev) { setLoading(false); return; }
       setEvent(ev);
       const { data: secs } = await supabase.from('venue_sections').select('*').eq('event_id', id!);
@@ -78,7 +81,15 @@ const Booking = () => {
   if (loading) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
   if (!event) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Event not found.</p></div>;
 
-  const unitPrice = selectedSection ? selectedSection.price : event.price;
+  const dyn = computeDynamicPrice({
+    price: event.price,
+    date: event.date,
+    tickets_sold: event.tickets_sold ?? 0,
+    capacity: event.capacity ?? 100,
+  });
+  // Apply same multiplier to section prices (relative to base) for consistency
+  const baseUnit = selectedSection ? selectedSection.price : event.price;
+  const unitPrice = Math.round(baseUnit * dyn.multiplier);
   const subtotal = unitPrice * tickets;
   const fee = Math.round(subtotal * 0.05);
   const total = subtotal + fee;
@@ -219,6 +230,11 @@ const Booking = () => {
               {event.time && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{event.time}</span>}
               {event.venue && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{event.venue}, {event.city}</span>}
             </div>
+            {dyn.multiplier !== 1 && (
+              <div className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${priceBadgeClasses(dyn.label)}`}>
+                {dyn.label === 'surge' ? '🔥' : '💸'} Live pricing: {dyn.reason} ({dyn.multiplier > 1 ? '+' : ''}{Math.round((dyn.multiplier - 1) * 100)}%)
+              </div>
+            )}
           </div>
         </div>
       </div>
