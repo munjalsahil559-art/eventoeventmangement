@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
+import EventChatbot from "@/components/EventChatbot";
 import Index from "./pages/Index";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/ticket/:ticketCode" element={<TicketView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <EventChatbot />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
