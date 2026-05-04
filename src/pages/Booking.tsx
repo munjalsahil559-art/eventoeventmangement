@@ -335,21 +335,39 @@ const Booking = () => {
       {/* STEP 2: Payment */}
       {step === 'payment' && (
         <div className="space-y-6">
+          {!payee && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2">
+              <p className="text-sm font-semibold text-destructive">Payments are not available for this event yet</p>
+              <p className="text-xs text-muted-foreground">
+                The event organizer hasn't set up a verified payout account, so payments cannot be routed to them safely.
+                Please try another event or check back later.
+              </p>
+              <button
+                onClick={() => navigate(`/event/${event.id}`)}
+                className="mt-1 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+              >
+                Back to event
+              </button>
+            </div>
+          )}
+
           {/* Payment method tabs */}
           <div className="flex rounded-xl border border-border overflow-hidden">
             <button
               onClick={() => setPaymentMethod('card')}
+              disabled={!payee}
               className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
                 paymentMethod === 'card' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
-              }`}
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               <CreditCard className="h-4 w-4" /> Card Payment
             </button>
             <button
               onClick={() => setPaymentMethod('upi')}
+              disabled={!payee}
               className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
                 paymentMethod === 'upi' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
-              }`}
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               <Smartphone className="h-4 w-4" /> UPI Payment
             </button>
@@ -369,7 +387,7 @@ const Booking = () => {
           />
 
           {/* Payment form */}
-          {paymentMethod === 'card' ? (
+          {!payee ? null : paymentMethod === 'card' ? (
             <CardPaymentForm
               total={total}
               processing={processing}
