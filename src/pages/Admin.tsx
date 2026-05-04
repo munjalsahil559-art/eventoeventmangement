@@ -255,6 +255,26 @@ const Admin = () => {
     toast.success('Account deleted'); fetchAll();
   };
 
+  const handleToggleVerify = async (acc: PaymentAccount) => {
+    const verifying = !acc.is_verified;
+    if (verifying) {
+      const hasBank = acc.account_number && acc.ifsc_code && acc.bank_name;
+      const hasUpi = !!acc.upi_id;
+      if (!hasBank && !hasUpi) {
+        toast.error('Account needs bank details (Bank + A/C + IFSC) or a UPI ID before it can be verified.');
+        return;
+      }
+      if (!confirm(`Verify "${acc.account_holder_name}"? Verified accounts can receive payouts and unlock event publishing.`)) return;
+    }
+    const { error } = await supabase
+      .from('admin_payment_accounts')
+      .update({ is_verified: verifying, verified_at: verifying ? new Date().toISOString() : null })
+      .eq('id', acc.id);
+    if (error) { toast.error('Failed to update verification'); return; }
+    toast.success(verifying ? 'Account verified' : 'Verification revoked');
+    fetchAll();
+  };
+
   // Payment data for admin's events
   const myPayments = payments.filter(p => {
     const booking = bookings.find(b => b.id === p.booking_id);
