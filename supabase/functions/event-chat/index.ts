@@ -50,9 +50,19 @@ Deno.serve(async (req) => {
     const systemPrompt = `You are Evento's friendly event-discovery assistant for an Indian event-booking app.
 Help the user find events by category, city, date, mood, or budget. Be concise (2-4 short sentences max), warm, and use light emojis.
 
-When recommending events, ALWAYS call the recommend_events tool with the matching event IDs from the catalog below — do not invent events.
-If the user asks something unrelated (e.g. weather), politely steer back to events.
-Ask one clarifying question only if you truly cannot match any events.
+ALWAYS call the respond tool exactly once with:
+  - reply: your short text answer
+  - event_ids: matching event UUIDs from the catalog (max 6, empty if none fit yet)
+  - follow_ups: 3-4 SHORT (max 5 words) tap-to-send refinement chips that progressively narrow the recommendations.
+    Cycle through these dimensions across turns based on what's still unknown:
+      • TIME — "This weekend", "Tonight", "Next week", "Weekday evenings"
+      • VIBE — "Family-friendly", "Romantic date", "Party night", "Chill & cultural", "High energy"
+      • SEATING — "VIP seats", "Budget seating", "Standing/GA", "Front row"
+      • BUDGET — "Under ₹500", "₹500–1500", "Premium ₹2000+"
+      • CITY — top Indian cities if location unknown
+    Pick chips that are RELEVANT to the user's last message — never repeat dimensions they already specified.
+
+Never invent events. If the user asks something unrelated, politely steer back to events.
 
 ${prefSummary}
 
@@ -62,18 +72,21 @@ ${(events || []).map((e: any) => `- ${e.id} | ${e.title} | ${e.category} | ${e.c
     const tools = [{
       type: "function",
       function: {
-        name: "recommend_events",
-        description: "Surface a list of events to the user as cards. Use whenever you mention specific events.",
+        name: "respond",
+        description: "Reply to the user with text, recommended events, and refinement chips.",
         parameters: {
           type: "object",
           properties: {
+            reply: { type: "string", description: "Short conversational reply (2-4 sentences)" },
             event_ids: { type: "array", items: { type: "string" }, description: "Event UUIDs from the catalog (max 6)" },
+            follow_ups: { type: "array", items: { type: "string" }, description: "3-4 short refinement chips (max 5 words each)" },
           },
-          required: ["event_ids"],
+          required: ["reply", "event_ids", "follow_ups"],
           additionalProperties: false,
         },
       },
     }];
+    const toolChoice = { type: "function", function: { name: "respond" } };
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -82,6 +95,7 @@ ${(events || []).map((e: any) => `- ${e.id} | ${e.title} | ${e.category} | ${e.c
         model: "google/gemini-2.5-flash",
         messages: [{ role: "system", content: systemPrompt }, ...messages],
         tools,
+        tool_choice: toolChoice,
       }),
     });
 
@@ -95,20 +109,22 @@ ${(events || []).map((e: any) => `- ${e.id} | ${e.title} | ${e.category} | ${e.c
 
     const data = await aiRes.json();
     const msg = data.choices?.[0]?.message;
-    const reply = msg?.content || "Let me know what kind of event you're in the mood for! 🎟️";
-
+    let reply = msg?.content || "Let me know what kind of event you're in the mood for! 🎟️";
     let recommendedEvents: any[] = [];
+    let followUps: string[] = [];
     const toolCall = msg?.tool_calls?.[0];
-    if (toolCall?.function?.name === "recommend_events") {
+    if (toolCall?.function?.name === "respond") {
       try {
         const args = JSON.parse(toolCall.function.arguments || "{}");
+        if (args.reply) reply = args.reply;
         const ids: string[] = (args.event_ids || []).slice(0, 6);
         recommendedEvents = (events || []).filter((e: any) => ids.includes(e.id));
+        followUps = (args.follow_ups || []).slice(0, 4);
       } catch (e) { console.error("tool parse", e); }
     }
 
     return new Response(
-      JSON.stringify({ reply, events: recommendedEvents }),
+      JSON.stringify({ reply, events: recommendedEvents, follow_ups: followUps }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
