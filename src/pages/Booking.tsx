@@ -230,6 +230,11 @@ const Booking = () => {
               {event.time && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{event.time}</span>}
               {event.venue && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{event.venue}, {event.city}</span>}
             </div>
+            {dyn.multiplier !== 1 && (
+              <div className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${priceBadgeClasses(dyn.label)}`}>
+                {dyn.label === 'surge' ? '🔥' : '💸'} Live pricing: {dyn.reason} ({dyn.multiplier > 1 ? '+' : ''}{Math.round((dyn.multiplier - 1) * 100)}%)
+              </div>
+            )}
           </div>
         </div>
       </div>
