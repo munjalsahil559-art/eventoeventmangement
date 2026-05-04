@@ -371,8 +371,24 @@ const Admin = () => {
       {/* Events Tab */}
       {tab === 'events' && (
         <>
+          {!hasVerifiedAccount && (
+            <div className="mb-4 flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-yellow-400 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-200">Payout account required</p>
+                <p className="text-xs text-muted-foreground mt-0.5">You need at least one verified payout account before you can publish an event. Payments from your events will be routed to this account.</p>
+              </div>
+              <button onClick={() => setTab('accounts')} className="rounded-lg border border-yellow-500/40 px-3 py-1.5 text-xs font-medium text-yellow-200 hover:bg-yellow-500/10 whitespace-nowrap">Add account</button>
+            </div>
+          )}
           <div className="mb-4 flex justify-end">
-            <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="flex items-center gap-2 gradient-primary rounded-lg px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">
+            <button
+              onClick={() => {
+                if (!hasVerifiedAccount) { toast.error('Add and verify a payout account first.'); setTab('accounts'); return; }
+                setShowForm(true); setEditingId(null); setForm(emptyForm);
+              }}
+              disabled={!hasVerifiedAccount}
+              className="flex items-center gap-2 gradient-primary rounded-lg px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
               <Plus className="h-4 w-4" /> Add Event
             </button>
           </div>
