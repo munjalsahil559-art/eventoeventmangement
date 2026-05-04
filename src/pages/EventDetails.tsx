@@ -5,6 +5,7 @@ import { Star, MapPin, Calendar, Clock, Users, Minus, Plus, ArrowLeft, Heart, Sh
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { computeDynamicPrice, priceBadgeClasses } from '@/lib/dynamicPricing';
+import LiveAvailability from '@/components/LiveAvailability';
 
 interface DbEvent {
   id: string;
@@ -87,6 +88,8 @@ const EventDetails = () => {
                 <p className="leading-relaxed text-muted-foreground">{event.description}</p>
               </div>
             )}
+
+            <LiveAvailability eventId={event.id} capacity={event.capacity} />
           </motion.div>
         </div>
 
