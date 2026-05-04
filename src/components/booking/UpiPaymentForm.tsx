@@ -2,27 +2,34 @@ import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Smartphone, Lock, ExternalLink } from 'lucide-react';
 
+interface PayeeAccount {
+  account_holder_name: string;
+  upi_id: string | null;
+}
+
 interface UpiPaymentFormProps {
   total: number;
   eventTitle: string;
   processing: boolean;
+  payee?: PayeeAccount | null;
   onPay: (upiId: string) => void;
 }
 
-const UpiPaymentForm = ({ total, eventTitle, processing, onPay }: UpiPaymentFormProps) => {
+const UpiPaymentForm = ({ total, eventTitle, processing, payee, onPay }: UpiPaymentFormProps) => {
   const [upiId, setUpiId] = useState('');
 
-  const merchantUpi = 'evento@upi';
+  const merchantUpi = payee?.upi_id || 'evento@upi';
+  const merchantName = payee?.account_holder_name || 'Evento';
   const txnNote = `Booking: ${eventTitle}`;
 
   // UPI payment link for QR code and deep-link
-  const upiPaymentLink = `upi://pay?pa=${merchantUpi}&pn=Evento&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}`;
+  const upiPaymentLink = `upi://pay?pa=${encodeURIComponent(merchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}`;
 
   const isValidUpi = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(upiId);
 
   // Build deep-link with user's UPI ID as payer
   const buildDeepLink = (payerVpa: string) => {
-    return `upi://pay?pa=${merchantUpi}&pn=Evento&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}&payer.vpa=${encodeURIComponent(payerVpa)}`;
+    return `upi://pay?pa=${encodeURIComponent(merchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}&payer.vpa=${encodeURIComponent(payerVpa)}`;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,7 +47,7 @@ const UpiPaymentForm = ({ total, eventTitle, processing, onPay }: UpiPaymentForm
       const isAndroid = /Android/i.test(navigator.userAgent);
       if (isAndroid) {
         // Android intent URL - opens UPI app chooser
-        const intentUrl = `intent://pay?pa=${merchantUpi}&pn=Evento&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}#Intent;scheme=upi;package=;end;`;
+        const intentUrl = `intent://pay?pa=${encodeURIComponent(merchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}#Intent;scheme=upi;package=;end;`;
         window.location.href = intentUrl;
       } else {
         // iOS - try direct UPI link
@@ -60,7 +67,7 @@ const UpiPaymentForm = ({ total, eventTitle, processing, onPay }: UpiPaymentForm
   const handleOpenApp = () => {
     const isAndroid = /Android/i.test(navigator.userAgent);
     if (isAndroid) {
-      window.location.href = `intent://pay?pa=${merchantUpi}&pn=Evento&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}#Intent;scheme=upi;package=;end;`;
+      window.location.href = `intent://pay?pa=${encodeURIComponent(merchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${total}&cu=INR&tn=${encodeURIComponent(txnNote)}#Intent;scheme=upi;package=;end;`;
     } else {
       window.location.href = upiPaymentLink;
     }
@@ -74,6 +81,12 @@ const UpiPaymentForm = ({ total, eventTitle, processing, onPay }: UpiPaymentForm
         <h3 className="flex items-center gap-2 font-display font-semibold">
           <Smartphone className="h-5 w-5 text-primary" /> UPI Payment
         </h3>
+
+        {!payee?.upi_id && (
+          <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 p-3 text-[11px] text-orange-300">
+            ⚠️ Organizer hasn't set up a UPI ID yet — using a demo VPA. Real payment cannot be received.
+          </div>
+        )}
 
         {/* QR Code Section */}
         <div className="flex flex-col items-center">
@@ -144,8 +157,8 @@ const UpiPaymentForm = ({ total, eventTitle, processing, onPay }: UpiPaymentForm
         <div className="rounded-lg bg-secondary/50 p-3 space-y-1">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Invoice Details</p>
           <div className="text-xs space-y-0.5 text-muted-foreground">
-            <p>Payee: Evento Payments</p>
-            <p>UPI ID: {merchantUpi}</p>
+            <p>Payee: {merchantName}</p>
+            <p>UPI ID: <span className="font-mono text-foreground">{merchantUpi}</span></p>
             <p>Amount: ₹{total.toLocaleString()}</p>
             <p>For: {eventTitle}</p>
           </div>

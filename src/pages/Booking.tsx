@@ -31,6 +31,16 @@ interface DbEvent {
   image_url: string | null;
   tickets_sold?: number;
   capacity?: number;
+  created_by?: string | null;
+}
+
+interface AdminPaymentAccount {
+  id: string;
+  account_holder_name: string;
+  bank_name: string | null;
+  account_number: string | null;
+  ifsc_code: string | null;
+  upi_id: string | null;
 }
 
 const Booking = () => {
@@ -42,6 +52,7 @@ const Booking = () => {
 
   const [event, setEvent] = useState<DbEvent | null>(null);
   const [sections, setSections] = useState<VenueSection[]>([]);
+  const [payee, setPayee] = useState<AdminPaymentAccount | null>(null);
   const [selectedSection, setSelectedSection] = useState<VenueSection | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [bookedSeats, setBookedSeats] = useState<string[]>([]);
@@ -55,9 +66,22 @@ const Booking = () => {
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
     const load = async () => {
-      const { data: ev } = await supabase.from('events').select('id, title, date, time, venue, city, price, image_url, tickets_sold, capacity').eq('id', id!).single();
+      const { data: ev } = await supabase.from('events').select('id, title, date, time, venue, city, price, image_url, tickets_sold, capacity, created_by').eq('id', id!).single();
       if (!ev) { setLoading(false); return; }
       setEvent(ev);
+
+      // Fetch the event organizer's payment account (admin who created the event)
+      if (ev.created_by) {
+        const { data: acc } = await supabase
+          .from('admin_payment_accounts')
+          .select('id, account_holder_name, bank_name, account_number, ifsc_code, upi_id, is_primary')
+          .eq('admin_id', ev.created_by)
+          .order('is_primary', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (acc) setPayee(acc as AdminPaymentAccount);
+      }
+
       const { data: secs } = await supabase.from('venue_sections').select('*').eq('event_id', id!);
       setSections(secs || []);
       const { data: existing } = await supabase.from('bookings').select('booked_seat_ids').eq('event_id', id!);
@@ -347,6 +371,7 @@ const Booking = () => {
             <CardPaymentForm
               total={total}
               processing={processing}
+              payee={payee}
               onPay={(details) => handlePayment({ method: 'card', cardNumber: details.cardNumber, cardHolder: details.cardHolder })}
             />
           ) : (
@@ -354,6 +379,7 @@ const Booking = () => {
               total={total}
               eventTitle={event.title}
               processing={processing}
+              payee={payee}
               onPay={(upiId) => handlePayment({ method: 'upi', upiId })}
             />
           )}

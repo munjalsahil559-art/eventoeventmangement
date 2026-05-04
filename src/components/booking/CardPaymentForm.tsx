@@ -1,13 +1,21 @@
 import { useState } from 'react';
-import { CreditCard, Lock } from 'lucide-react';
+import { CreditCard, Lock, Building2 } from 'lucide-react';
+
+interface PayeeAccount {
+  account_holder_name: string;
+  bank_name: string | null;
+  account_number: string | null;
+  ifsc_code: string | null;
+}
 
 interface CardPaymentFormProps {
   total: number;
   processing: boolean;
+  payee?: PayeeAccount | null;
   onPay: (cardDetails: { cardNumber: string; cardHolder: string; expiry: string; cvv: string }) => void;
 }
 
-const CardPaymentForm = ({ total, processing, onPay }: CardPaymentFormProps) => {
+const CardPaymentForm = ({ total, processing, payee, onPay }: CardPaymentFormProps) => {
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -36,6 +44,25 @@ const CardPaymentForm = ({ total, processing, onPay }: CardPaymentFormProps) => 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {payee && (payee.account_number || payee.bank_name) && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-1">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+            <Building2 className="h-3.5 w-3.5" /> Funds will be settled to organizer
+          </p>
+          <div className="text-xs text-muted-foreground space-y-0.5">
+            <p>Account holder: <span className="text-foreground font-medium">{payee.account_holder_name}</span></p>
+            {payee.bank_name && <p>Bank: <span className="text-foreground">{payee.bank_name}</span></p>}
+            {payee.account_number && <p>A/C: <span className="font-mono text-foreground">****{payee.account_number.slice(-4)}</span></p>}
+            {payee.ifsc_code && <p>IFSC: <span className="font-mono text-foreground">{payee.ifsc_code}</span></p>}
+          </div>
+        </div>
+      )}
+      {!payee && (
+        <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 p-3 text-[11px] text-orange-300">
+          ⚠️ Organizer hasn't added a payout account yet. Card details are stored for record only.
+        </div>
+      )}
+
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <h3 className="flex items-center gap-2 font-display font-semibold">
           <CreditCard className="h-5 w-5 text-primary" /> Card Details
