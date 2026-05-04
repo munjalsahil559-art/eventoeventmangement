@@ -135,6 +135,9 @@ const Admin = () => {
   const myEventIds = new Set(myEvents.map(e => e.id));
   const myBookings = bookings.filter(b => myEventIds.has(b.event_id));
 
+  const verifiedAccounts = paymentAccounts.filter(a => a.is_verified);
+  const hasVerifiedAccount = verifiedAccounts.length > 0;
+
   const totalRevenue = myBookings.reduce((s, b) => s + b.total_amount, 0);
   const totalTickets = myBookings.reduce((s, b) => s + b.tickets, 0);
 
@@ -151,6 +154,12 @@ const Admin = () => {
   // Event CRUD
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasVerifiedAccount) {
+      toast.error('Add and verify a payout account before publishing an event.');
+      setShowForm(false);
+      setTab('accounts');
+      return;
+    }
     const payload = {
       title: form.title, description: form.description || null, category: form.category,
       venue: form.venue || null, city: form.city, date: form.date, time: form.time || null,
