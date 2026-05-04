@@ -268,6 +268,11 @@ const Booking = () => {
       {/* STEP 1: Seat Selection */}
       {step === 'seats' && (
         <div className="space-y-6">
+          {!payee && (
+            <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-200">
+              ⚠️ The organizer for this event hasn't added a verified payout account yet. You can still browse seats, but checkout will be disabled until they do.
+            </div>
+          )}
           {sections.length > 0 ? (
             <>
               <VenueSeatMap
@@ -297,12 +302,13 @@ const Booking = () => {
                 onClick={() => {
                   if (!selectedSection) { toast.error('Please select a section'); return; }
                   if (selectedSeats.length < tickets) { toast.error(`Please select ${tickets} seat(s)`); return; }
+                  if (!payee) { toast.error('Organizer has no verified payout account. Checkout disabled.'); return; }
                   setStep('payment');
                 }}
-                disabled={!selectedSection || selectedSeats.length < tickets}
+                disabled={!selectedSection || selectedSeats.length < tickets || !payee}
                 className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                Continue to Payment — {selectedSection ? `${selectedSection.section_name} ₹${total.toLocaleString()}` : 'Select seats first'}
+                {!payee ? 'Checkout unavailable' : `Continue to Payment — ${selectedSection ? `${selectedSection.section_name} ₹${total.toLocaleString()}` : 'Select seats first'}`}
               </button>
             </>
           ) : (
@@ -322,10 +328,11 @@ const Booking = () => {
               />
 
               <button
-                onClick={() => setStep('payment')}
-                className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                onClick={() => { if (!payee) { toast.error('Organizer has no verified payout account.'); return; } setStep('payment'); }}
+                disabled={!payee}
+                className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                Continue to Payment — ₹{Math.round(event.price * tickets * 1.05).toLocaleString()}
+                {!payee ? 'Checkout unavailable' : `Continue to Payment — ₹${Math.round(event.price * tickets * 1.05).toLocaleString()}`}
               </button>
             </>
           )}
