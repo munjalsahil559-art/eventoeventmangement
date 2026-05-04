@@ -41,6 +41,7 @@ interface AdminPaymentAccount {
   account_number: string | null;
   ifsc_code: string | null;
   upi_id: string | null;
+  is_verified?: boolean | null;
 }
 
 const Booking = () => {
@@ -74,8 +75,9 @@ const Booking = () => {
       if (ev.created_by) {
         const { data: acc } = await supabase
           .from('admin_payment_accounts')
-          .select('id, account_holder_name, bank_name, account_number, ifsc_code, upi_id, is_primary')
+          .select('id, account_holder_name, bank_name, account_number, ifsc_code, upi_id, is_primary, is_verified')
           .eq('admin_id', ev.created_by)
+          .eq('is_verified', true)
           .order('is_primary', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -266,6 +268,11 @@ const Booking = () => {
       {/* STEP 1: Seat Selection */}
       {step === 'seats' && (
         <div className="space-y-6">
+          {!payee && (
+            <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-200">
+              ⚠️ The organizer for this event hasn't added a verified payout account yet. You can still browse seats, but checkout will be disabled until they do.
+            </div>
+          )}
           {sections.length > 0 ? (
             <>
               <VenueSeatMap
@@ -295,12 +302,13 @@ const Booking = () => {
                 onClick={() => {
                   if (!selectedSection) { toast.error('Please select a section'); return; }
                   if (selectedSeats.length < tickets) { toast.error(`Please select ${tickets} seat(s)`); return; }
+                  if (!payee) { toast.error('Organizer has no verified payout account. Checkout disabled.'); return; }
                   setStep('payment');
                 }}
-                disabled={!selectedSection || selectedSeats.length < tickets}
+                disabled={!selectedSection || selectedSeats.length < tickets || !payee}
                 className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                Continue to Payment — {selectedSection ? `${selectedSection.section_name} ₹${total.toLocaleString()}` : 'Select seats first'}
+                {!payee ? 'Checkout unavailable' : `Continue to Payment — ${selectedSection ? `${selectedSection.section_name} ₹${total.toLocaleString()}` : 'Select seats first'}`}
               </button>
             </>
           ) : (
@@ -320,10 +328,11 @@ const Booking = () => {
               />
 
               <button
-                onClick={() => setStep('payment')}
-                className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                onClick={() => { if (!payee) { toast.error('Organizer has no verified payout account.'); return; } setStep('payment'); }}
+                disabled={!payee}
+                className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                Continue to Payment — ₹{Math.round(event.price * tickets * 1.05).toLocaleString()}
+                {!payee ? 'Checkout unavailable' : `Continue to Payment — ₹${Math.round(event.price * tickets * 1.05).toLocaleString()}`}
               </button>
             </>
           )}
@@ -333,21 +342,39 @@ const Booking = () => {
       {/* STEP 2: Payment */}
       {step === 'payment' && (
         <div className="space-y-6">
+          {!payee && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2">
+              <p className="text-sm font-semibold text-destructive">Payments are not available for this event yet</p>
+              <p className="text-xs text-muted-foreground">
+                The event organizer hasn't set up a verified payout account, so payments cannot be routed to them safely.
+                Please try another event or check back later.
+              </p>
+              <button
+                onClick={() => navigate(`/event/${event.id}`)}
+                className="mt-1 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+              >
+                Back to event
+              </button>
+            </div>
+          )}
+
           {/* Payment method tabs */}
           <div className="flex rounded-xl border border-border overflow-hidden">
             <button
               onClick={() => setPaymentMethod('card')}
+              disabled={!payee}
               className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
                 paymentMethod === 'card' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
-              }`}
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               <CreditCard className="h-4 w-4" /> Card Payment
             </button>
             <button
               onClick={() => setPaymentMethod('upi')}
+              disabled={!payee}
               className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
                 paymentMethod === 'upi' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'
-              }`}
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               <Smartphone className="h-4 w-4" /> UPI Payment
             </button>
@@ -367,7 +394,7 @@ const Booking = () => {
           />
 
           {/* Payment form */}
-          {paymentMethod === 'card' ? (
+          {!payee ? null : paymentMethod === 'card' ? (
             <CardPaymentForm
               total={total}
               processing={processing}
