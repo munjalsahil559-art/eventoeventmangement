@@ -18,6 +18,7 @@ interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
   events?: EventCard[];
+  followUps?: string[];
 }
 
 const SUGGESTIONS = [
@@ -53,7 +54,12 @@ const EventChatbot = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply, events: data.events || [] }]);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.reply,
+        events: data.events || [],
+        followUps: data.follow_ups || [],
+      }]);
     } catch (e: any) {
       toast.error(e.message || 'Chatbot error');
       setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Sorry, I had trouble responding. Try again in a moment.' }]);
@@ -124,6 +130,19 @@ const EventChatbot = () => {
                               {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                             </p>
                           </Link>
+                        ))}
+                      </div>
+                    )}
+                    {m.role === 'assistant' && m.followUps && m.followUps.length > 0 && i === messages.length - 1 && !loading && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {m.followUps.map(f => (
+                          <button
+                            key={f}
+                            onClick={() => send(f)}
+                            className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                          >
+                            {f}
+                          </button>
                         ))}
                       </div>
                     )}
