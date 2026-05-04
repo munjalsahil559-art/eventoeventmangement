@@ -10,6 +10,7 @@ import PaymentInvoice from '@/components/booking/PaymentInvoice';
 import CardPaymentForm from '@/components/booking/CardPaymentForm';
 import UpiPaymentForm from '@/components/booking/UpiPaymentForm';
 import MyTicketsQR from '@/components/booking/MyTicketsQR';
+import OrganizerPayoutPanel from '@/components/booking/OrganizerPayoutPanel';
 import { computeDynamicPrice, priceBadgeClasses } from '@/lib/dynamicPricing';
 
 interface VenueSection {
@@ -342,6 +343,8 @@ const Booking = () => {
       {/* STEP 2: Payment */}
       {step === 'payment' && (
         <div className="space-y-6">
+          {payee && <OrganizerPayoutPanel payee={payee} amount={total} />}
+
           {!payee && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2">
               <p className="text-sm font-semibold text-destructive">Payments are not available for this event yet</p>
