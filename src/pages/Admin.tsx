@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard, Eye, ScanLine } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard, Eye, ScanLine, ShieldCheck, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { categories, cities } from '@/data/events';
@@ -68,6 +68,8 @@ interface PaymentAccount {
   ifsc_code: string | null;
   upi_id: string | null;
   is_primary: boolean | null;
+  is_verified: boolean | null;
+  verified_at: string | null;
 }
 
 const emptyForm = {
