@@ -41,6 +41,7 @@ interface AdminPaymentAccount {
   account_number: string | null;
   ifsc_code: string | null;
   upi_id: string | null;
+  is_verified?: boolean | null;
 }
 
 const Booking = () => {
@@ -74,8 +75,9 @@ const Booking = () => {
       if (ev.created_by) {
         const { data: acc } = await supabase
           .from('admin_payment_accounts')
-          .select('id, account_holder_name, bank_name, account_number, ifsc_code, upi_id, is_primary')
+          .select('id, account_holder_name, bank_name, account_number, ifsc_code, upi_id, is_primary, is_verified')
           .eq('admin_id', ev.created_by)
+          .eq('is_verified', true)
           .order('is_primary', { ascending: false })
           .limit(1)
           .maybeSingle();
