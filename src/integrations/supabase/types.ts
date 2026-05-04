@@ -24,8 +24,10 @@ export type Database = {
           id: string
           ifsc_code: string | null
           is_primary: boolean | null
+          is_verified: boolean
           updated_at: string
           upi_id: string | null
+          verified_at: string | null
         }
         Insert: {
           account_holder_name: string
@@ -36,8 +38,10 @@ export type Database = {
           id?: string
           ifsc_code?: string | null
           is_primary?: boolean | null
+          is_verified?: boolean
           updated_at?: string
           upi_id?: string | null
+          verified_at?: string | null
         }
         Update: {
           account_holder_name?: string
@@ -48,8 +52,10 @@ export type Database = {
           id?: string
           ifsc_code?: string | null
           is_primary?: boolean | null
+          is_verified?: boolean
           updated_at?: string
           upi_id?: string | null
+          verified_at?: string | null
         }
         Relationships: []
       }

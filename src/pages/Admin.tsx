@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard, Eye, ScanLine } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, X, BarChart3, Ticket, Users, IndianRupee, TrendingUp, Armchair, Wallet, Building2, CreditCard, Eye, ScanLine, ShieldCheck, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { categories, cities } from '@/data/events';
@@ -68,6 +68,8 @@ interface PaymentAccount {
   ifsc_code: string | null;
   upi_id: string | null;
   is_primary: boolean | null;
+  is_verified: boolean | null;
+  verified_at: string | null;
 }
 
 const emptyForm = {
@@ -133,6 +135,9 @@ const Admin = () => {
   const myEventIds = new Set(myEvents.map(e => e.id));
   const myBookings = bookings.filter(b => myEventIds.has(b.event_id));
 
+  const verifiedAccounts = paymentAccounts.filter(a => a.is_verified);
+  const hasVerifiedAccount = verifiedAccounts.length > 0;
+
   const totalRevenue = myBookings.reduce((s, b) => s + b.total_amount, 0);
   const totalTickets = myBookings.reduce((s, b) => s + b.tickets, 0);
 
@@ -149,6 +154,12 @@ const Admin = () => {
   // Event CRUD
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasVerifiedAccount) {
+      toast.error('Add and verify a payout account before publishing an event.');
+      setShowForm(false);
+      setTab('accounts');
+      return;
+    }
     const payload = {
       title: form.title, description: form.description || null, category: form.category,
       venue: form.venue || null, city: form.city, date: form.date, time: form.time || null,
@@ -242,6 +253,26 @@ const Admin = () => {
     const { error } = await supabase.from('admin_payment_accounts').delete().eq('id', id);
     if (error) { toast.error('Failed to delete'); return; }
     toast.success('Account deleted'); fetchAll();
+  };
+
+  const handleToggleVerify = async (acc: PaymentAccount) => {
+    const verifying = !acc.is_verified;
+    if (verifying) {
+      const hasBank = acc.account_number && acc.ifsc_code && acc.bank_name;
+      const hasUpi = !!acc.upi_id;
+      if (!hasBank && !hasUpi) {
+        toast.error('Account needs bank details (Bank + A/C + IFSC) or a UPI ID before it can be verified.');
+        return;
+      }
+      if (!confirm(`Verify "${acc.account_holder_name}"? Verified accounts can receive payouts and unlock event publishing.`)) return;
+    }
+    const { error } = await supabase
+      .from('admin_payment_accounts')
+      .update({ is_verified: verifying, verified_at: verifying ? new Date().toISOString() : null })
+      .eq('id', acc.id);
+    if (error) { toast.error('Failed to update verification'); return; }
+    toast.success(verifying ? 'Account verified' : 'Verification revoked');
+    fetchAll();
   };
 
   // Payment data for admin's events
@@ -340,8 +371,24 @@ const Admin = () => {
       {/* Events Tab */}
       {tab === 'events' && (
         <>
+          {!hasVerifiedAccount && (
+            <div className="mb-4 flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-yellow-400 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-200">Payout account required</p>
+                <p className="text-xs text-muted-foreground mt-0.5">You need at least one verified payout account before you can publish an event. Payments from your events will be routed to this account.</p>
+              </div>
+              <button onClick={() => setTab('accounts')} className="rounded-lg border border-yellow-500/40 px-3 py-1.5 text-xs font-medium text-yellow-200 hover:bg-yellow-500/10 whitespace-nowrap">Add account</button>
+            </div>
+          )}
           <div className="mb-4 flex justify-end">
-            <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="flex items-center gap-2 gradient-primary rounded-lg px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">
+            <button
+              onClick={() => {
+                if (!hasVerifiedAccount) { toast.error('Add and verify a payout account first.'); setTab('accounts'); return; }
+                setShowForm(true); setEditingId(null); setForm(emptyForm);
+              }}
+              disabled={!hasVerifiedAccount}
+              className="flex items-center gap-2 gradient-primary rounded-lg px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
               <Plus className="h-4 w-4" /> Add Event
             </button>
           </div>
@@ -564,6 +611,16 @@ const Admin = () => {
             </button>
           </div>
 
+          {paymentAccounts.length > 0 && !hasVerifiedAccount && (
+            <div className="mb-4 flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
+              <ShieldAlert className="h-5 w-5 shrink-0 text-yellow-400 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-200">No verified accounts yet</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Verify at least one payout account to enable event publishing. Tap the shield icon on any account to verify it.</p>
+              </div>
+            </div>
+          )}
+
           {paymentAccounts.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-12 text-center">
               <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
@@ -578,15 +635,32 @@ const Admin = () => {
                       <Building2 className="h-5 w-5 text-primary" />
                       <h3 className="font-display font-semibold">{acc.account_holder_name}</h3>
                     </div>
-                    {acc.is_primary && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Primary</span>}
+                    <div className="flex items-center gap-1.5">
+                      {acc.is_primary && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Primary</span>}
+                      {acc.is_verified ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-400"><ShieldCheck className="h-3 w-3" /> Verified</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-400"><ShieldAlert className="h-3 w-3" /> Unverified</span>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     {acc.bank_name && <p>🏦 {acc.bank_name}</p>}
                     {acc.account_number && <p>A/C: ****{acc.account_number.slice(-4)}</p>}
                     {acc.ifsc_code && <p>IFSC: {acc.ifsc_code}</p>}
                     {acc.upi_id && <p>UPI: {acc.upi_id}</p>}
+                    {acc.is_verified && acc.verified_at && (
+                      <p className="text-xs text-green-400/80">Verified on {new Date(acc.verified_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    )}
                   </div>
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex items-center gap-2 pt-1 border-t border-border">
+                    <button
+                      onClick={() => handleToggleVerify(acc)}
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${acc.is_verified ? 'border border-border text-muted-foreground hover:bg-secondary' : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'}`}
+                    >
+                      {acc.is_verified ? <><ShieldAlert className="h-3.5 w-3.5" /> Revoke</> : <><ShieldCheck className="h-3.5 w-3.5" /> Verify</>}
+                    </button>
+                    <div className="flex-1" />
                     <button onClick={() => handleEditAccount(acc)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => handleDeleteAccount(acc.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                   </div>
