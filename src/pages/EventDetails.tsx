@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Star, MapPin, Calendar, Clock, Users, Minus, Plus, ArrowLeft, Heart, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { computeDynamicPrice, priceBadgeClasses } from '@/lib/dynamicPricing';
 
 interface DbEvent {
   id: string;
@@ -41,8 +42,11 @@ const EventDetails = () => {
   if (loading) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
   if (!event) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Event not found.</p></div>;
 
+  const dyn = computeDynamicPrice(event);
+  const livePrice = dyn.price;
+
   const handleBook = () => {
-    navigate(`/booking/${event.id}?tickets=${tickets}`);
+    navigate(`/booking/${event.id}?tickets=${tickets}&dp=${livePrice}`);
   };
 
   return (
@@ -90,7 +94,18 @@ const EventDetails = () => {
           <div className="sticky top-24 space-y-4 rounded-xl border border-border bg-card p-5">
             <div>
               <p className="text-sm text-muted-foreground">Price per ticket</p>
-              <p className="font-display text-3xl font-bold text-gradient">₹{event.price}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="font-display text-3xl font-bold text-gradient">₹{livePrice}</p>
+                {livePrice !== dyn.base && (
+                  <p className="text-sm line-through text-muted-foreground">₹{dyn.base}</p>
+                )}
+              </div>
+              <div className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${priceBadgeClasses(dyn.label)}`}>
+                {dyn.label === 'surge' ? '🔥' : dyn.label === 'deal' ? '💸' : '✨'} {dyn.reason}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Live pricing · {dyn.daysLeft === 0 ? 'today' : `${dyn.daysLeft} day${dyn.daysLeft === 1 ? '' : 's'} left`} · {Math.round(dyn.demandRatio * 100)}% sold
+              </p>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
@@ -103,9 +118,9 @@ const EventDetails = () => {
             </div>
 
             <div className="space-y-2 rounded-lg bg-secondary p-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>₹{event.price * tickets}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Convenience Fee</span><span>₹{Math.round(event.price * tickets * 0.05)}</span></div>
-              <div className="border-t border-border pt-2 flex justify-between font-semibold"><span>Total</span><span>₹{Math.round(event.price * tickets * 1.05)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>₹{livePrice * tickets}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Convenience Fee</span><span>₹{Math.round(livePrice * tickets * 0.05)}</span></div>
+              <div className="border-t border-border pt-2 flex justify-between font-semibold"><span>Total</span><span>₹{Math.round(livePrice * tickets * 1.05)}</span></div>
             </div>
 
             <button onClick={handleBook} className="w-full gradient-primary rounded-lg py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 animate-pulse-glow">
