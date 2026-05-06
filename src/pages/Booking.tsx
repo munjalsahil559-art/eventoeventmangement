@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle, Calendar, MapPin, Clock, CreditCard, Smartphone, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Clock, CreditCard, Smartphone, ArrowLeft, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import CardPaymentForm from '@/components/booking/CardPaymentForm';
 import UpiPaymentForm from '@/components/booking/UpiPaymentForm';
 import MyTicketsQR from '@/components/booking/MyTicketsQR';
 import OrganizerPayoutPanel from '@/components/booking/OrganizerPayoutPanel';
+import SplitPaymentDialog from '@/components/booking/SplitPaymentDialog';
 import { computeDynamicPrice, priceBadgeClasses } from '@/lib/dynamicPricing';
 
 interface VenueSection {
@@ -64,6 +65,7 @@ const Booking = () => {
   const [loading, setLoading] = useState(true);
   const [transactionRef, setTransactionRef] = useState('');
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [splitOpen, setSplitOpen] = useState(false);
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
@@ -345,6 +347,15 @@ const Booking = () => {
         <div className="space-y-6">
           {payee && <OrganizerPayoutPanel payee={payee} amount={total} />}
 
+          {payee && selectedSeats.length > 1 && (
+            <button
+              onClick={() => setSplitOpen(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/5 py-3 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Users className="h-4 w-4" /> Split payment with friends ({selectedSeats.length} seats × ₹{Math.round(total / selectedSeats.length).toLocaleString()})
+            </button>
+          )}
+
           {!payee && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2">
               <p className="text-sm font-semibold text-destructive">Payments are not available for this event yet</p>
@@ -421,6 +432,18 @@ const Booking = () => {
             ← Back to Seat Selection
           </button>
         </div>
+      )}
+
+      {splitOpen && selectedSeats.length > 0 && (
+        <SplitPaymentDialog
+          open={splitOpen}
+          onClose={() => setSplitOpen(false)}
+          eventId={event.id}
+          sectionId={selectedSection?.id || null}
+          seatIds={selectedSeats}
+          unitPrice={unitPrice}
+          feePerSeat={Math.round((fee) / Math.max(1, selectedSeats.length))}
+        />
       )}
     </div>
   );

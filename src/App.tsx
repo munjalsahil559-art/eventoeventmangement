@@ -16,6 +16,7 @@ import ImportEvents from "./pages/ImportEvents";
 import Scanner from "./pages/Scanner";
 import TicketView from "./pages/TicketView";
 import NotFound from "./pages/NotFound";
+import SplitPay from "./pages/SplitPay";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/admin/import-events" element={<ImportEvents />} />
             <Route path="/admin/scanner" element={<Scanner />} />
             <Route path="/ticket/:ticketCode" element={<TicketView />} />
+            <Route path="/split/:token" element={<SplitPay />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <EventChatbot />
