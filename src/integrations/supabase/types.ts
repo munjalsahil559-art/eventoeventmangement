@@ -176,6 +176,107 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_split_shares: {
+        Row: {
+          amount: number
+          assignee_name: string
+          created_at: string
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          seat_id: string
+          seat_label: string
+          split_id: string
+          status: string
+          transaction_ref: string | null
+        }
+        Insert: {
+          amount?: number
+          assignee_name: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          seat_id: string
+          seat_label: string
+          split_id: string
+          status?: string
+          transaction_ref?: string | null
+        }
+        Update: {
+          amount?: number
+          assignee_name?: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          seat_id?: string
+          seat_label?: string
+          split_id?: string
+          status?: string
+          transaction_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_split_shares_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "payment_splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_splits: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          event_id: string
+          expires_at: string
+          fee_per_seat: number
+          id: string
+          organizer_user_id: string
+          seat_ids: string[]
+          section_id: string | null
+          share_token: string
+          status: string
+          total_amount: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          event_id: string
+          expires_at?: string
+          fee_per_seat?: number
+          id?: string
+          organizer_user_id: string
+          seat_ids?: string[]
+          section_id?: string | null
+          share_token?: string
+          status?: string
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          event_id?: string
+          expires_at?: string
+          fee_per_seat?: number
+          id?: string
+          organizer_user_id?: string
+          seat_ids?: string[]
+          section_id?: string | null
+          share_token?: string
+          status?: string
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -387,12 +488,40 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finalize_split_booking: { Args: { _token: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      pay_split_share: {
+        Args: {
+          _payment_method: string
+          _share_id: string
+          _token: string
+          _transaction_ref: string
+        }
+        Returns: {
+          amount: number
+          assignee_name: string
+          created_at: string
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          seat_id: string
+          seat_label: string
+          split_id: string
+          status: string
+          transaction_ref: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payment_split_shares"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
