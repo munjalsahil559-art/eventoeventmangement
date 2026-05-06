@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle2, Clock, Users, CreditCard, Smartphone, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, Users, CreditCard, Smartphone, Loader2, XCircle, Ban } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface Split {
@@ -12,6 +13,7 @@ interface Split {
   status: string;
   expires_at: string;
   booking_id: string | null;
+  organizer_user_id: string;
 }
 interface Share {
   id: string;
@@ -26,12 +28,14 @@ interface Ev { title: string; date: string; venue: string | null; city: string; 
 
 const SplitPay = () => {
   const { token } = useParams();
+  const { user } = useAuth();
   const [split, setSplit] = useState<Split | null>(null);
   const [shares, setShares] = useState<Share[]>([]);
   const [event, setEvent] = useState<Ev | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState<string | null>(null);
   const [methodFor, setMethodFor] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const load = async () => {
     if (!token) return;
@@ -75,12 +79,29 @@ const SplitPay = () => {
     load();
   };
 
+  const cancelSplit = async () => {
+    if (!split) return;
+    if (!confirm('Cancel this split? Friends who already paid will need a manual refund.')) return;
+    setCancelling(true);
+    const { error } = await supabase
+      .from('payment_splits')
+      .update({ status: 'cancelled' })
+      .eq('id', split.id);
+    setCancelling(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Split cancelled');
+    load();
+  };
+
   if (loading) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (!split) return <div className="container mx-auto flex h-[60vh] items-center justify-center"><p className="text-muted-foreground">Invalid or expired split link.</p></div>;
 
   const paid = shares.filter(s => s.status === 'paid').length;
   const expired = new Date(split.expires_at) < new Date();
   const completed = split.status === 'completed';
+  const cancelled = split.status === 'cancelled';
+  const isOrganizer = user?.id === split.organizer_user_id;
+  const locked = completed || expired || cancelled;
 
   return (
     <div className="container mx-auto max-w-2xl py-6">
@@ -121,6 +142,20 @@ const SplitPay = () => {
         {expired && !completed && (
           <p className="mt-2 text-xs font-semibold text-destructive">This split link has expired.</p>
         )}
+        {cancelled && (
+          <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-destructive">
+            <XCircle className="h-4 w-4" /> The organizer cancelled this split. No further payments can be made.
+          </p>
+        )}
+        {isOrganizer && !locked && (
+          <button
+            onClick={cancelSplit}
+            disabled={cancelling}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            <Ban className="h-3.5 w-3.5" /> {cancelling ? 'Cancelling…' : 'Cancel split'}
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -138,7 +173,7 @@ const SplitPay = () => {
                 <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-3 py-1 text-xs font-semibold text-green-500">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Paid
                 </span>
-              ) : completed || expired ? (
+              ) : locked ? (
                 <span className="text-xs text-muted-foreground">—</span>
               ) : methodFor === share.id ? (
                 <div className="flex gap-2">
