@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, User, Heart, Menu, X, Shield, LogOut } from 'lucide-react';
+import { Search, MapPin, User, Heart, Menu, X, Shield, LogOut, Sun, Moon } from 'lucide-react';
 import { cities } from '@/data/events';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -11,6 +12,7 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { user, isAdmin, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +60,13 @@ const Navbar = () => {
         </form>
 
         <div className="hidden items-center gap-2 md:flex">
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
           {isAdmin && (
             <Link to="/admin" className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-accent transition-colors hover:bg-secondary">
               <Shield className="h-4 w-4" /> Admin
@@ -99,6 +108,10 @@ const Navbar = () => {
             </div>
           </form>
           <div className="flex flex-col gap-2">
+            <button onClick={toggleTheme} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-secondary">
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </button>
             <Link to="/events" className="rounded-lg px-3 py-2 text-sm hover:bg-secondary" onClick={() => setMobileMenuOpen(false)}>Explore Events</Link>
             {isAdmin && <Link to="/admin" className="rounded-lg px-3 py-2 text-sm text-accent hover:bg-secondary" onClick={() => setMobileMenuOpen(false)}>Admin Panel</Link>}
             <Link to="/wishlist" className="rounded-lg px-3 py-2 text-sm hover:bg-secondary" onClick={() => setMobileMenuOpen(false)}>Wishlist</Link>
